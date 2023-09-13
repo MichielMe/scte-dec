@@ -1,0 +1,9 @@
+*.log_*
+*.mxf
+__pycache__/
+venv/
+*.dll
+*.pptx
+KernelDiags*
+*.exe
+*.log
