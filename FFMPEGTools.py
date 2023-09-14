@@ -11,6 +11,11 @@ DID_SDID_TO_EXTRACT = "4107"
 FRAME_RATE = 25
 FRAME_DURATION = 40
 
+class FFMPEGResult(NamedTuple):
+    return_code: int
+    args: str
+    error: str
+
 class FFProbeResult(NamedTuple):
     return_code: int
     json: str
@@ -20,7 +25,39 @@ class Packet(NamedTuple):
     anc_data: list
     pts_time: str
     utc_time: str
+    pts_frame_number: int
+
+def ffmpeg(fname, frame_numbers, padding=0) -> FFMPEGResult:
+    frame_number_selectstring = "\'"
+
+    # if padding is needed, overwrite the frame_numbers list with a new list to add each frame number plus/minus the padding size
+    # e.g. frame_numbers [5, 177] with padding size 3 will become: [2, 3, 4, 5, 6, 7, 8, 174, 175, 176, 177, 178, 179, 180]
+    if padding > 0:
+        frame_numbers = [frame for frame_number in frame_numbers for frame in range(frame_number - padding, frame_number + padding + 1, 1) ]
     
+    # build the select string and skip the plus at the end
+    length = len(frame_numbers)
+    for idx, frame_number in enumerate(frame_numbers, start=1):
+        frame_number_selectstring += ('eq(n,' + str(frame_number) + ')')
+        if idx < length:
+            frame_number_selectstring += '+'
+    frame_number_selectstring += "\'"
+
+    print(frame_numbers)
+
+    # write each supplied frame number to a jpeg thumbnail
+    # select string needs to be combined, otherwise gives "Error splitting the argument list: Option not found" when splitted in commands list
+    commands = ["ffmpeg", 
+                "-i", fname, 
+                "-vf", "select=" + frame_number_selectstring,
+                "-vsync", "0", 
+                "frames%d.jpg"]
+    
+    result = subprocess.run(commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+    return FFMPEGResult(return_code=result.returncode,
+                        args=result.args, 
+                        error=result.stderr)
+
 def ffprobe(fname) -> FFProbeResult:
     commands = ["ffprobe", 
                 "-v", "quiet", 
@@ -41,7 +78,7 @@ def parse_ffprobe_output(ffprobe_result: FFProbeResult) -> list[Packet]:
     data = json.loads(ffprobe_result)
     start_timecode = data['format']['tags']['timecode']
     for packet in data['packets']:
-        anc_packet = extract(packet['data'], packet['pts_time'], start_timecode)
+        anc_packet = extract(packet['data'], packet['pts_time'], start_timecode, packet['pts'])
         if anc_packet != None:
             all_packets.append(anc_packet)
     return all_packets
@@ -49,7 +86,7 @@ def parse_ffprobe_output(ffprobe_result: FFProbeResult) -> list[Packet]:
 def ms_to_frames(ms) -> int:
     return round((ms / FRAME_DURATION) * 1000)
 
-def extract(packet_data, pts_time, start_timecode, did_sdid_to_extract=DID_SDID_TO_EXTRACT) -> Packet:
+def extract(packet_data, pts_time, start_timecode, pts_frame_number, did_sdid_to_extract=DID_SDID_TO_EXTRACT) -> Packet:
     anc_packet = ""
     
     # convert fractional time
@@ -85,7 +122,7 @@ def extract(packet_data, pts_time, start_timecode, did_sdid_to_extract=DID_SDID_
                 else:
                     # we are at the beginning of a new ANC packet, so we export the latest built packet
                     if anc_packet[0:4] == did_sdid_to_extract:
-                        packet = Packet(anc_packet, file_timestamp, adjusted_timestamp)
+                        packet = Packet(anc_packet, file_timestamp, adjusted_timestamp, pts_frame_number)
                         return packet
                     # reset to be able to build new packet
                     anc_packet = ""

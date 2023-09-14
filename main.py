@@ -10,7 +10,7 @@ from pathlib import Path
 from SCTE_104_Tools import decode_SCTE104, decode_SCTE104_to_output
 from PhabrixTools import phabrix_preprocessor
 from MorpheusTools import morpheus_preprocessor, log_filtered_kerneldiag_logs, filter_kernel_diags_on_device_and_keyword, make_fake_phabrix_anc_data
-from FFMPEGTools import ffprobe, parse_ffprobe_output
+from FFMPEGTools import ffprobe, parse_ffprobe_output, ffmpeg
 
 log = logging.getLogger(__name__)
 
@@ -31,6 +31,8 @@ COM_ANLYS_ANC_DATA = 603
 COM_ANLYS_2_ANC_DATA = 8004
 COM_ANLYS_3_ANC_DATA = 8104
 ###########
+
+PADDING = 1
 
 def get_anc_data():
     mydll = cdll.LoadLibrary('./PhabrixRemoteDllSid64.dll')
@@ -158,6 +160,7 @@ def DecodeMXF(filename):
         print("Could not read file: " + filename)
         exit(1)
     ffprobe_result = ffprobe(filename)
+    frame_number_list = []
     if ffprobe_result.return_code == 0:
         ffprobe_output = parse_ffprobe_output(ffprobe_result.json)
         for scte104_packet in ffprobe_output:
@@ -168,11 +171,15 @@ def DecodeMXF(filename):
             # DC Data Count
             # from the packet as the next decoding step expects only the UDW
             result = decode_SCTE104(scte104_packet.anc_data[8:])
-            print ('@file timestamp: {} - utc timestamp: {} - broadcast timestamp: {}'.format(scte104_packet.pts_time, scte104_packet.utc_time, result.get_splice_event_timestamp()))
+            frame_number_list.append(scte104_packet.pts_frame_number)
+            print ('@frame_number: {} file timestamp: {} - utc timestamp: {} - broadcast timestamp: {}'.format(scte104_packet.pts_frame_number, scte104_packet.pts_time, scte104_packet.utc_time, result.get_splice_event_timestamp()))
             print(result)
+        print("Extracting frame thumbnails..")
+        ffmpeg_result = ffmpeg(filename, frame_number_list, PADDING)
     else:
         print("ERROR while reading {}".format(filename))
         print(ffprobe_result.error, file=sys.stderr)
+        print(ffmpeg_result.error, file=sys.stderr)
 
 if __name__ == "__main__":    
     #DecodeANC(oneshot=False)
