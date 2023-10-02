@@ -174,8 +174,11 @@ def DecodeMXF(filename):
             frame_number_list.append(scte104_packet.pts_frame_number)
             print ('@frame_number: {} file timestamp: {} - utc timestamp: {} - broadcast timestamp: {}'.format(scte104_packet.pts_frame_number, scte104_packet.pts_time, scte104_packet.utc_time, result.get_splice_event_timestamp()))
             print(result)
+        # output the frame thumbnails to folder named like inputfile
+        outputfolder = Path(Path(filename).stem)
+        outputfolder.mkdir(parents=True, exist_ok=True)
         print("Extracting frame thumbnails..")
-        ffmpeg_result = ffmpeg(filename, frame_number_list, PADDING)
+        ffmpeg_result = ffmpeg(filename, frame_number_list, PADDING, outputfolder)
     else:
         print("ERROR while reading {}".format(filename))
         print(ffprobe_result.error, file=sys.stderr)
@@ -184,7 +187,7 @@ def DecodeMXF(filename):
 if __name__ == "__main__":    
     #DecodeANC(oneshot=False)
     #decode_SCTE104("ffff002c0000dc0002000209142c0402010400021f40010b0012000002290000f00000300000000000000000000b0104000b0000000c00000001")
-    DecodeMXF("SCTE_36.mxf")
+    DecodeMXF("SCTE43.mxf")
     
     
 
