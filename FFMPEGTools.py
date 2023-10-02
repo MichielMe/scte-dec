@@ -1,3 +1,4 @@
+import os
 import subprocess
 import json
 import datetime
@@ -27,7 +28,7 @@ class Packet(NamedTuple):
     utc_time: str
     pts_frame_number: int
 
-def ffmpeg(fname, frame_numbers, padding=0) -> FFMPEGResult:
+def ffmpeg(fname, frame_numbers, padding=0, folder="") -> FFMPEGResult:
     frame_number_selectstring = "\'"
 
     # if padding is needed, overwrite the frame_numbers list with a new list to add each frame number plus/minus the padding size
@@ -44,6 +45,7 @@ def ffmpeg(fname, frame_numbers, padding=0) -> FFMPEGResult:
     frame_number_selectstring += "\'"
 
     print(frame_numbers)
+    outputhpath = os.path.join(folder, "frames%d.jpg")
 
     # write each supplied frame number to a jpeg thumbnail
     # select string needs to be combined, otherwise gives "Error splitting the argument list: Option not found" when splitted in commands list
@@ -51,7 +53,7 @@ def ffmpeg(fname, frame_numbers, padding=0) -> FFMPEGResult:
                 "-i", fname, 
                 "-vf", "select=" + frame_number_selectstring,
                 "-vsync", "0", 
-                "frames%d.jpg"]
+                outputhpath]
     
     result = subprocess.run(commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     return FFMPEGResult(return_code=result.returncode,
