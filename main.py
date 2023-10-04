@@ -171,9 +171,13 @@ def DecodeMXF(filename):
             # DC Data Count
             # from the packet as the next decoding step expects only the UDW
             result = decode_SCTE104(scte104_packet.anc_data[8:])
+            # add announcement frame
             frame_number_list.append(scte104_packet.pts_frame_number)
-            print ('@frame_number: {} file timestamp: {} - utc timestamp: {} - broadcast timestamp: {}'.format(scte104_packet.pts_frame_number, scte104_packet.pts_time, scte104_packet.utc_time, result.get_splice_event_timestamp()))
-            print(result)
+            # the morpheus driver took this margin to announce the scte packet
+            driver_margin = result.get_splice_event_timestamp() - scte104_packet.utc_time
+            # add scte transition frame
+            frame_number_list.append(scte104_packet.pts_frame_number + driver_margin.frames)
+            print ('@frame_number: {} - file timestamp: {} - utc timestamp: {} - start/end timestamp: {}'.format(scte104_packet.pts_frame_number, scte104_packet.pts_time, scte104_packet.utc_time, result.get_splice_event_timestamp()))
         # output the frame thumbnails to folder named like inputfile
         outputfolder = Path(Path(filename).stem)
         outputfolder.mkdir(parents=True, exist_ok=True)
@@ -187,7 +191,7 @@ def DecodeMXF(filename):
 if __name__ == "__main__":    
     #DecodeANC(oneshot=False)
     #decode_SCTE104("ffff002c0000dc0002000209142c0402010400021f40010b0012000002290000f00000300000000000000000000b0104000b0000000c00000001")
-    DecodeMXF("SCTE43.mxf")
+    DecodeMXF("SCTE45.mxf")
     
     
 
