@@ -24,11 +24,12 @@ class FFProbeResult(NamedTuple):
 
 class Packet(NamedTuple):
     anc_data: list
-    pts_time: str
-    utc_time: str
+    pts_time: Timecode
+    utc_time: Timecode
     pts_frame_number: int
 
-def ffmpeg(fname, frame_numbers, padding=0, folder="") -> FFMPEGResult:
+def ffmpeg(fname: str, frame_numbers: list[int], padding: int=0, folder: str="") -> FFMPEGResult:
+    print("Frame nrs:", frame_numbers)
     frame_number_selectstring = "\'"
 
     # if padding is needed, overwrite the frame_numbers list with a new list to add each frame number plus/minus the padding size
@@ -44,7 +45,7 @@ def ffmpeg(fname, frame_numbers, padding=0, folder="") -> FFMPEGResult:
             frame_number_selectstring += '+'
     frame_number_selectstring += "\'"
 
-    print(frame_numbers)
+    print("Frame nrs with padding:", frame_numbers)
     outputhpath = os.path.join(folder, "frames%d.jpg")
 
     # write each supplied frame number to a jpeg thumbnail
@@ -60,7 +61,7 @@ def ffmpeg(fname, frame_numbers, padding=0, folder="") -> FFMPEGResult:
                         args=result.args, 
                         error=result.stderr)
 
-def ffprobe(fname) -> FFProbeResult:
+def ffprobe(fname: str) -> FFProbeResult:
     commands = ["ffprobe", 
                 "-v", "quiet", 
                 "-print_format", "json",
@@ -85,10 +86,10 @@ def parse_ffprobe_output(ffprobe_result: FFProbeResult) -> list[Packet]:
             all_packets.append(anc_packet)
     return all_packets
 
-def ms_to_frames(ms) -> int:
+def ms_to_frames(ms: int) -> int:
     return round((ms / FRAME_DURATION) * 1000)
 
-def extract(packet_data, pts_time, start_timecode, pts_frame_number, did_sdid_to_extract=DID_SDID_TO_EXTRACT) -> Packet:
+def extract(packet_data: str, pts_time: int, start_timecode: str, pts_frame_number: int, did_sdid_to_extract: str=DID_SDID_TO_EXTRACT) -> Packet:
     anc_packet = ""
     
     # convert fractional time
@@ -99,10 +100,11 @@ def extract(packet_data, pts_time, start_timecode, pts_frame_number, did_sdid_to
     file_timestamp = Template('0${seconds}:${ms}')
     file_timestamp = file_timestamp.substitute(seconds=seconds, ms=ms)
 
-    tc1 = Timecode(FRAME_RATE, start_timecode)
-    tc2 = Timecode(FRAME_RATE, file_timestamp)
-    adjusted_timestamp = (tc1+tc2)
-    #Timecode module calculates 1 frame off
+    # cast as Timecode type
+    start_timecode = Timecode(FRAME_RATE, start_timecode)
+    file_timestamp = Timecode(FRAME_RATE, file_timestamp)
+    adjusted_timestamp = (start_timecode+file_timestamp)
+    # Timecode module calculates 1 frame off
     adjusted_timestamp.add_frames(-1)
     
     packet_data_per_line = (packet_data.split("\n"))
