@@ -28,7 +28,7 @@ class Packet(NamedTuple):
     utc_time: Timecode
     pts_frame_number: int
 
-def ffmpeg(fname: str, frame_numbers: list[int], padding: int=0, folder: str="") -> FFMPEGResult:
+def ffmpeg_extract_thumbnails(video_filename: str, frame_numbers: list[int], padding: int=0, folder: str="") -> FFMPEGResult:
     print("Frame nrs:", frame_numbers)
     frame_number_selectstring = "\'"
 
@@ -51,7 +51,7 @@ def ffmpeg(fname: str, frame_numbers: list[int], padding: int=0, folder: str="")
     # write each supplied frame number to a jpeg thumbnail
     # select string needs to be combined, otherwise gives "Error splitting the argument list: Option not found" when splitted in commands list
     commands = ["ffmpeg", 
-                "-i", fname, 
+                "-i", video_filename, 
                 "-vf", "select=" + frame_number_selectstring,
                 "-vsync", "0", 
                 outputhpath]
