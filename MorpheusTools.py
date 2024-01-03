@@ -105,6 +105,7 @@ def log_filtered_kerneldiag_logs(line, ignore_keep_alive=False):
         probel_string = result[5][1:-14]
         single_log_line["orig"] = probel_string
         single_log_line["data"] = morpheus_preprocessor(probel_string)
+    
         
         all_log_lines.append(single_log_line)
 
@@ -117,6 +118,7 @@ def log_filtered_kerneldiag_logs(line, ignore_keep_alive=False):
                     pass
             else:
                 log.info("@ %s (%s) ~ %s (%s)", scte_event_in_log["timecode"], scte_event_in_log["timecode_frac"], scte_event_in_log["timecode_utc_adjusted"], scte_event_in_log["timecode_utc_adjusted_frac"])
+                print("trying decode ", single_log_line["data"])
                 decode_SCTE104_to_file(scte_event_in_log["data"])
         except ReadError:
             print("error decoding: ", scte_event_in_log)
