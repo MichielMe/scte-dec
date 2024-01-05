@@ -5,8 +5,9 @@ import pytz
 import datetime
 from datetime import timezone
 from timecode import Timecode
-from SCTE_104_Tools import decode_SCTE104_to_file
+from SCTE_104_Tools import decode_SCTE104, decode_SCTE104_to_file
 from bitstring import ReadError
+from PhabrixTools import make_fake_phabrix_anc_data, fake_anc_decode
 
 # make helper function to make processing pipeline of data
 def compose(*functions):
@@ -129,3 +130,20 @@ def filter_kernel_diags_on_device_and_keyword(file, device, keyword):
     line = (line for line in open(file) if device in line )
     filtered = (filtered for filtered in line if keyword in filtered )
     return filtered
+
+def morpheus_log_parser(probel_string):
+    #manual_anc = "ffff002c000073000200020a1f190c02010400021f40010b0012000002290000000000310000000000000000000a0104000b0000000c00000001"
+    manual_anc = "ffff002c0000dd0002000209153b0402010400021f40010b0012000002290000000000310000000000000000000b0104000b0000000c00000001"
+    #manual_anc = "ffff002200001b000100020c0d0e0f010101000e0100010000029a0fa007d00100011e"
+    #print ("** Manually entered ANC:", manual_anc)
+
+    #make_fake_phabrix_anc_data(probel_string)
+    #raw_anc = ['1023', '1023', '577', '263', '557', '264', '767', '767', '512', '300', '512', '512', '731', '512', '512', '512', '258', '275', '518', '20', '524', '277', '258', '257', '260', '512', '258', '287', '320', '257', '267', '512', '530', '512', '512', '512', '512', '512', '512', '572', '40', '527', '512', '272', '512', '512', '512', '512', '512', '512', '512', '512', '415', '0', '0', '0', '0', '0', '0', '0', '0']
+    #print("** raw anc:", fake_anc_decode(raw_anc))
+    decode_SCTE104(manual_anc)
+    '''
+    data = morpheus_preprocessor(probel_string)
+    print("** Probel: ", data)
+    
+    decode_SCTE104(data)
+    '''

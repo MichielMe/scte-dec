@@ -1,4 +1,62 @@
+from ctypes import cdll, c_int, c_char_p, c_uint, c_ulonglong, create_string_buffer, pointer
 from functools import reduce
+
+def get_anc_data(IP: str, PORT: int, MSG_GET_ITEM_VALUES: int, COM_ANLYS_ANC_DATA: int) -> str:
+    mydll = cdll.LoadLibrary('./PhabrixRemoteDllSid64.dll')
+    StString = ""
+    RtString = create_string_buffer(500)
+    RetVal = c_int()
+
+    '''
+    int SendStatus = PhSendMsg(IpAd, PortNum, MSG_GET_ITEM_VALUES, COM_ANLYS_ANC_DATA, 0, 0, SendText, ReturnText, ref RetValue, 500); // Get the ANC data using MSG_GET_ITEM_VALUES on COM_ANLYS_ANC_DATA
+    '''
+    Status = mydll.PhSendMsg(c_char_p(IP), 
+                             c_uint(PORT), 
+                             c_uint(MSG_GET_ITEM_VALUES), 
+                             c_uint(COM_ANLYS_ANC_DATA), 
+                             c_int(0), c_int(0), 
+                             StString, 
+                             RtString, 
+                             pointer(RetVal), 
+                             500)
+    print("\n")
+      
+    anc_data = RtString.value.decode('utf-8').split('\t')
+    #print("Raw ANC data:", anc_data)
+
+    if (Status == 0):
+        print("Bad ip address or port number\n")
+        return
+
+    if (Status == -5):
+        print("Remote control disabled\n")
+        return
+
+    return anc_data
+
+def TestOldApi(IP: str, PORT: int, MSG_GET_ITEM_VALUES: int, COM_ANLYS_ANC_DATA: int) -> None:
+    print ("Testing Old Api")
+    mydll = cdll.LoadLibrary('./PhabrixRemoteDllSid64.dll')
+    
+    Conn = mydll.OpenConnection(c_char_p(IP), c_uint(PORT))
+    print ("socket:", Conn)
+    '''
+    WhichItem = c_int()
+    
+    print ("Get Log Entry Number 3")
+    StString = create_string_buffer(500)
+    WhichItem = 2 # Note: zero based index 
+    mydll.GetItemText.argtypes = [c_ulonglong]
+    Status = mydll.GetItemText(Conn, c_uint(COM_ANLYS_LOG_VIEW), StString, 500, WhichItem)
+    print ("Log Entry 3: " + str(StString.value.decode('utf-8')))
+ 
+    ''' 
+    print ("Closing connection")
+
+    mydll.CloseConnection.argtypes = [c_ulonglong]
+    mydll.CloseConnection(Conn)
+    print ("Closed connection..")
+
 
 def print_like_phabrix_ui(dataframe) -> None:
     row = 0
