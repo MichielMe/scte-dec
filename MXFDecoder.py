@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 from FFMPEGTools import ffprobe, parse_ffprobe_output, ffmpeg_extract_thumbnails, FFMPEGFrameData
-from SCTE_104_Tools import decode_SCTE104
+from Tools.SCTE_104_Tools import decode_SCTE104
 
 PADDING = 1
 

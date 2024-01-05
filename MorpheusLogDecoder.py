@@ -1,4 +1,4 @@
-from MorpheusTools import log_filtered_kerneldiag_logs, filter_kernel_diags_on_device_and_keyword
+from Tools.MorpheusTools import log_filtered_kerneldiag_logs, filter_kernel_diags_on_device_and_keyword
 
 FILE = "KernelDiags.log.2023-11-21"
 DEVICE = "SCTE104_TLNProtocol"
