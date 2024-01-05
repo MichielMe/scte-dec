@@ -10,7 +10,7 @@ from typing import NamedTuple
 DID_SDID = ["4105", "4107", "4108"]
 DID_SDID_TO_EXTRACT = "4107"
 FRAME_RATE = 25
-FRAME_DURATION = 40
+FRAME_DURATION = 40 #milliseconds
 
 class FFMPEGResult(NamedTuple):
     return_code: int
@@ -28,7 +28,11 @@ class Packet(NamedTuple):
     utc_time: Timecode
     pts_frame_number: int
 
-def ffmpeg(fname: str, frame_numbers: list[int], padding: int=0, folder: str="") -> FFMPEGResult:
+class FFMPEGFrameData(NamedTuple):
+    frame_number: int
+    frame_text_data: str
+
+def ffmpeg_extract_thumbnails(video_filename: str, frame_numbers: list[int], padding: int=0, folder: str="") -> FFMPEGResult:
     print("Frame nrs:", frame_numbers)
     frame_number_selectstring = "\'"
 
@@ -38,23 +42,41 @@ def ffmpeg(fname: str, frame_numbers: list[int], padding: int=0, folder: str="")
         frame_numbers = [frame for frame_number in frame_numbers for frame in range(frame_number - padding, frame_number + padding + 1, 1) ]
     
     # build the select string and skip the plus at the end
-    length = len(frame_numbers)
+    n_frames = len(frame_numbers)
     for idx, frame_number in enumerate(frame_numbers, start=1):
         frame_number_selectstring += ('eq(n,' + str(frame_number) + ')')
-        if idx < length:
+        if idx < n_frames:
             frame_number_selectstring += '+'
     frame_number_selectstring += "\'"
 
     print("Frame nrs with padding:", frame_numbers)
-    outputhpath = os.path.join(folder, "frames%d.jpg")
+    outputpath = os.path.join(folder, "frames%d.jpg")
 
-    # write each supplied frame number to a jpeg thumbnail
-    # select string needs to be combined, otherwise gives "Error splitting the argument list: Option not found" when splitted in commands list
-    commands = ["ffmpeg", 
-                "-i", fname, 
-                "-vf", "select=" + frame_number_selectstring,
-                "-vsync", "0", 
-                outputhpath]
+    '''
+    ffmpeg -i SCTE_5.mxf -vf "select='eq(n\,29)+eq(n\,42)', 
+    drawtext=text='Frame 30':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,0)', 
+    drawtext=text='Frame 43':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,1)'" 
+    -vsync 0 -vframes 2 %03d.jpg
+    '''
+
+    # write each supplied frame number to a jpeg thumbnail  
+    commands = []
+    commands.append("ffmpeg")
+    # -i = input file
+    commands.extend(("-i", video_filename))
+    # -vf filtergraph (output)
+    # Create the filtergraph specified by filtergraph and use it to filter the stream. 
+    # select only the frame(s) we supply
+    commands.extend(("-vf", "select=" + frame_number_selectstring))
+    # -vsync 0 was previously used, but is deprecated
+    commands.extend(("-fps_mode", "passthrough"))
+    # stop processing after we outputted our requested frames, this speeds up the process considerably
+    commands.extend(("-frames", str(n_frames)))
+    # write output
+    commands.append(outputpath)
+
+    
+    # -vf "drawtext=text='%{gmtime}.%{eif\:mod(n, 30)\:d\:02d}': fontsize=40: fontcolor=white: x=10: y=10: box=1: boxborderw=10: boxcolor=black,fps=30"
     
     result = subprocess.run(commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     return FFMPEGResult(return_code=result.returncode,

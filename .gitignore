@@ -7,3 +7,9 @@ venv/
 KernelDiags*
 *.exe
 *.log
+ffmpeg.exe
+ffprobe.exe
+MXFInputfiles/
+TelenetDebugXLS/
+PhabrixExamples/
+results/
