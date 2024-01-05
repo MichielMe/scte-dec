@@ -1,6 +1,18 @@
 from scte.Scte104.SpliceEvent import SpliceEvent
 import bitstring
-import json
+from dataclasses import dataclass
+from typing import List
+
+from dataclasses_json import LetterCase, Undefined, dataclass_json
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass(frozen=True)
+class SCTE104Packet:
+    splice_event_timestamp: str
+    pre_roll_time: int
+    segmentation_upid: str
+    segmentation_type: str
 
 def decode_SCTE104(hex_string) -> SpliceEvent:
     print("Decoding:", hex_string)

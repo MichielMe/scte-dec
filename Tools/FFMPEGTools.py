@@ -6,6 +6,7 @@ from math import modf
 from string import Template
 from timecode import Timecode
 from typing import NamedTuple
+from Tools.SCTE_104_Tools import SCTE104Packet
 
 DID_SDID = ["4105", "4107", "4108"]
 DID_SDID_TO_EXTRACT = "4107"
@@ -30,9 +31,17 @@ class Packet(NamedTuple):
 
 class FFMPEGFrameData(NamedTuple):
     frame_number: int
-    frame_text_data: str
+    marker_type: str
+    frame_text_data: SCTE104Packet
 
-def ffmpeg_extract_thumbnails(video_filename: str, frame_numbers: list[int], padding: int=0, folder: str="") -> FFMPEGResult:
+def extract_frame_numbers(frame_data: list[FFMPEGFrameData]) -> list[int]:
+    frame_number_list = []
+    for frame in frame_data:
+        frame_number_list.append(frame.frame_number)
+    return frame_number_list
+
+def ffmpeg_extract_thumbnails(video_filename: str, frames: list[FFMPEGFrameData], padding: int=0, folder: str="") -> FFMPEGResult:
+    frame_numbers = extract_frame_numbers(frames)
     print("Frame nrs:", frame_numbers)
     frame_number_selectstring = "\'"
 
@@ -49,7 +58,30 @@ def ffmpeg_extract_thumbnails(video_filename: str, frame_numbers: list[int], pad
             frame_number_selectstring += '+'
     frame_number_selectstring += "\'"
 
-    print("Frame nrs with padding:", frame_numbers)
+    # build draw text command
+    # drawtext=text='Frame 30':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,0)', 
+    # drawtext=text='Frame 43':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,1)
+
+    # ffmpeg -i SCTE_5.mxf -vf "select='eq(n\,29)+eq(n\,42)', drawtext=text='Frame 30':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,0)', 
+    #drawtext=text='Frame 43':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,1)'" -vsync 0 -vframes 2 -q:v 2 %03d.jpg
+    draw_text_command = ""
+    n_frames = len(frames)
+    for idx, frame in enumerate(frames, start=0):
+        #print(idx, frame.frame_number)
+        
+        cmd = ("drawtext=text=\'Frame ", str(frame.frame_number), "\'", \
+               ":x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable=\'eq(n,", \
+               str(idx), \
+               ")\'"
+        )
+        draw_text_command += "".join(cmd)
+        if idx < n_frames-1:
+            draw_text_command += ","
+        #print(draw_text_command)
+    #draw_text_command += "\'"
+        
+    #print("draw txt cmd:", draw_text_command)
+    #print("Frame nrs with padding:", frame_numbers)
     outputpath = os.path.join(folder, "frames%d.jpg")
 
     '''
@@ -67,13 +99,19 @@ def ffmpeg_extract_thumbnails(video_filename: str, frame_numbers: list[int], pad
     # -vf filtergraph (output)
     # Create the filtergraph specified by filtergraph and use it to filter the stream. 
     # select only the frame(s) we supply
-    commands.extend(("-vf", "select=" + frame_number_selectstring))
+    #commands.extend(("-vf", "select=" + frame_number_selectstring))
+    filter_cmd = "".join([frame_number_selectstring, ",", draw_text_command])
+    #filter_cmd = frame_number_selectstring
+    commands.extend(("-vf", "select=" + filter_cmd))
     # -vsync 0 was previously used, but is deprecated
     commands.extend(("-fps_mode", "passthrough"))
     # stop processing after we outputted our requested frames, this speeds up the process considerably
     commands.extend(("-frames", str(n_frames)))
     # write output
     commands.append(outputpath)
+
+    
+    print(commands)
 
     
     # -vf "drawtext=text='%{gmtime}.%{eif\:mod(n, 30)\:d\:02d}': fontsize=40: fontcolor=white: x=10: y=10: box=1: boxborderw=10: boxcolor=black,fps=30"
