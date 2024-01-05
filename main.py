@@ -10,9 +10,8 @@ from pathlib import Path
 from SCTE_104_Tools import decode_SCTE104, decode_SCTE104_to_output
 from PhabrixTools import phabrix_preprocessor
 from MorpheusTools import morpheus_preprocessor, log_filtered_kerneldiag_logs, filter_kernel_diags_on_device_and_keyword, make_fake_phabrix_anc_data
-from FFMPEGTools import ffprobe, parse_ffprobe_output, ffmpeg
+from FFMPEGTools import ffprobe, parse_ffprobe_output, ffmpeg_extract_thumbnails, FFMPEGFrameData
 
-from TelenetTools import read_telenet_log
 
 log = logging.getLogger(__name__)
 
@@ -156,7 +155,8 @@ def DecodeMXF(filename):
         print("Could not read file: " + filename)
         exit(1)
     ffprobe_result = ffprobe(filename)
-    frame_number_list = []
+    injection_frame_number_list = []
+    marker_frame_number_list = []
     if ffprobe_result.return_code == 0:
         ffprobe_output = parse_ffprobe_output(ffprobe_result.json)
         for scte104_packet in ffprobe_output:
@@ -169,22 +169,26 @@ def DecodeMXF(filename):
             result = decode_SCTE104(scte104_packet.anc_data[8:])            
             if result.as_dict["timestamp"]["time_type"] == 0:
                 # add scte transition frame, no timestamp adjustment due to immediate trigger not containing timestamp information
-                frame_number_list.append(scte104_packet.pts_frame_number)
+                marker_frame_number_list.append(scte104_packet.pts_frame_number)
                 print ('@frame_number: {} - file timestamp: {} - utc timestamp: {}'.format(scte104_packet.pts_frame_number, scte104_packet.pts_time, scte104_packet.utc_time))
             if result.as_dict["timestamp"]["time_type"] == 2:
                 # add announcement frame - on this frame we announced an incoming trigger
-                frame_number_list.append(scte104_packet.pts_frame_number)
+                injection_frame_number_list.append(scte104_packet.pts_frame_number)
                 # the morpheus driver took this margin to announce the scte packet
                 driver_margin = result.get_splice_event_timestamp() - scte104_packet.utc_time
                 # add scte transition frame, the actual transition frame
-                frame_number_list.append(scte104_packet.pts_frame_number + driver_margin.frames)
-                print ('@frame_number: {} - file timestamp: {} - utc timestamp: {} - start/end timestamp: {}'.format(scte104_packet.pts_frame_number, scte104_packet.pts_time, scte104_packet.utc_time, result.get_splice_event_timestamp()))
+                marker_frame_number_list.append(scte104_packet.pts_frame_number + driver_margin.frames)
+                print('@frame_number: {}/(marker found at file timestamp: {}) '.format(scte104_packet.pts_frame_number, scte104_packet.pts_time))
+                print('|_> marker injection timestamp (utc): {}'.format(scte104_packet.utc_time))
+                print('|_> marker start/end timestamp (utc): {}'.format(result.get_splice_event_timestamp()))
                 print(result)
         # output the frame thumbnails to folder named like inputfile
-        outputfolder = Path(Path(filename).stem)
+        outputfolder = Path('results')
+        outputfolder = outputfolder / (Path(filename).stem)
         outputfolder.mkdir(parents=True, exist_ok=True)
+        
         print("Extracting frame thumbnails..")
-        ffmpeg_result = ffmpeg(filename, frame_number_list, PADDING, outputfolder)
+        ffmpeg_result = ffmpeg_extract_thumbnails(filename, marker_frame_number_list, PADDING, outputfolder)
     else:
         print("ERROR while reading {}".format(filename))
         print(ffprobe_result.error, file=sys.stderr)
@@ -192,8 +196,8 @@ def DecodeMXF(filename):
 
 if __name__ == "__main__":    
     #DecodeANC(oneshot=False)
-    #decode_SCTE104("ffff002c0000dc0002000209142c0402010400021f40010b0012000002290000f00000300000000000000000000b0104000b0000000c00000001")
-    DecodeMXF("SCTE_56.mxf")
+    
+    DecodeMXF("MXFInputfiles/SCTE_56.mxf")
     
     #read_telenet_log("VRT_testloop markers_271123.xls.xlsx")
 

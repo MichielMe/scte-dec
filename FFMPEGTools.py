@@ -28,6 +28,10 @@ class Packet(NamedTuple):
     utc_time: Timecode
     pts_frame_number: int
 
+class FFMPEGFrameData(NamedTuple):
+    frame_number: int
+    frame_text_data: str
+
 def ffmpeg_extract_thumbnails(video_filename: str, frame_numbers: list[int], padding: int=0, folder: str="") -> FFMPEGResult:
     print("Frame nrs:", frame_numbers)
     frame_number_selectstring = "\'"
