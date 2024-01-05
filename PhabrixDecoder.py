@@ -3,8 +3,8 @@ import datetime
 from datetime import timezone
 from time import sleep
 
-from PhabrixTools import get_anc_data, phabrix_preprocessor
-from SCTE_104_Tools import decode_SCTE104_to_output
+from Tools.PhabrixTools import get_anc_data, phabrix_preprocessor
+from Tools.SCTE_104_Tools import decode_SCTE104_to_output
 
 ###########
 IP = b'10.240.36.70'
