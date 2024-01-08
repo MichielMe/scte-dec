@@ -52,3 +52,16 @@ def test_timecode():
     tc12 = tc9 + tc10
     tc12.add_frames(-1)
     print(tc12)
+
+    tc13 = Timecode('25', '00:00:08.927')
+    tc14 = Timecode('25', '00:00:08.917')
+    tc15 = Timecode('25', '00:00:08.937')
+    tc16 = Timecode('25', '00:00:09.058')
+    tc13.set_fractional(False)
+    tc14.set_fractional(False)
+    tc15.set_fractional(False)
+    tc16.set_fractional(False)
+    print(tc13, tc14, tc15, tc16)
+
+if __name__ == "__main__":
+    test_timecode()

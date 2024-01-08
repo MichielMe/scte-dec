@@ -45,8 +45,22 @@ def ffmpeg_extract_thumbnails(video_filename: str, frames: list[FFMPEGFrameData]
     print("Frame nrs:", frame_numbers)
     frame_number_selectstring = "\'"
 
-    # if padding is needed, overwrite the frame_numbers list with a new list to add each frame number plus/minus the padding size
-    # e.g. frame_numbers [5, 177] with padding size 3 will become: [2, 3, 4, 5, 6, 7, 8, 174, 175, 176, 177, 178, 179, 180]
+    '''
+    if padding is needed, overwrite the frame_numbers list with a new list to add each frame number plus/minus the padding size
+    e.g. frame_numbers [5, 177] with padding size 3 will become: [2, 3, 4, 5, 6, 7, 8, 174, 175, 176, 177, 178, 179, 180]
+    X = len(frame_numbers), Y=(PADDING*2)+1 = ((PADDING * 2 ) + 1) * len(frame_numbers) = TOTAL FRAMES
+    
+    FRAMES | PADDING | TOTAL FRAMES
+    0           0           0
+    1           0           1
+    2           0           2
+    1           1           3
+    2           1           6
+    3           1           9
+    3           2           15
+    3           3           21
+    3           5           = ((5 * 2) + 1) * 3 = 33
+    '''
     if padding > 0:
         frame_numbers = [frame for frame_number in frame_numbers for frame in range(frame_number - padding, frame_number + padding + 1, 1) ]
     
@@ -106,7 +120,7 @@ def ffmpeg_extract_thumbnails(video_filename: str, frames: list[FFMPEGFrameData]
     # -vsync 0 was previously used, but is deprecated
     commands.extend(("-fps_mode", "passthrough"))
     # stop processing after we outputted our requested frames, this speeds up the process considerably
-    commands.extend(("-frames", str(n_frames)))
+    commands.extend(("-frames", str(len(frame_numbers))))
     # write output
     commands.append(outputpath)
 
