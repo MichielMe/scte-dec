@@ -5,14 +5,13 @@ from Tools.SCTE_104_Tools import decode_SCTE104, SCTE104Packet
 import operator
 
 
-PADDING = 0
+PADDING = 3
 
 def DecodeMXF(filename):
     if not Path(filename).is_file():
         print("Could not read file: " + filename)
         exit(1)
     ffprobe_result = ffprobe(filename)
-    injection_frame_number_list = []
     frame_number_list = []
     if ffprobe_result.return_code == 0:
         ffprobe_output = parse_ffprobe_output(ffprobe_result.json)

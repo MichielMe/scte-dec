@@ -7,7 +7,7 @@ from datetime import timezone
 from timecode import Timecode
 from Tools.SCTE_104_Tools import decode_SCTE104, decode_SCTE104_to_file
 from bitstring import ReadError
-from Tools.PhabrixTools import make_fake_phabrix_anc_data, fake_anc_decode
+from Tools.PhabrixTools import fake_anc_decode
 
 # make helper function to make processing pipeline of data
 def compose(*functions):
@@ -125,7 +125,7 @@ def log_filtered_kerneldiag_logs(line, ignore_keep_alive=False):
             print("error decoding: ", scte_event_in_log)
 
 def filter_kernel_diags_on_device_and_keyword(file, device, keyword):
-    
+    print(file)
     #filtered = (line for filtered_lines in open('KernelDiags.log') if device in filtered_lines for line in filtered_lines if keyword in filtered_lines)
     line = (line for line in open(file) if device in line )
     filtered = (filtered for filtered in line if keyword in filtered )

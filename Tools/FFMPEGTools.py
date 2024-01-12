@@ -42,9 +42,8 @@ def extract_frame_numbers(frame_data: list[FFMPEGFrameData]) -> list[int]:
 
 def ffmpeg_extract_thumbnails(video_filename: str, frames: list[FFMPEGFrameData], padding: int=0, folder: str="") -> FFMPEGResult:
     frame_numbers = extract_frame_numbers(frames)
+    orig_frame_numbers = frame_numbers
     print("Frame nrs:", frame_numbers)
-    frame_number_selectstring = "\'"
-
     '''
     if padding is needed, overwrite the frame_numbers list with a new list to add each frame number plus/minus the padding size
     e.g. frame_numbers [5, 177] with padding size 3 will become: [2, 3, 4, 5, 6, 7, 8, 174, 175, 176, 177, 178, 179, 180]
@@ -65,6 +64,7 @@ def ffmpeg_extract_thumbnails(video_filename: str, frames: list[FFMPEGFrameData]
         frame_numbers = [frame for frame_number in frame_numbers for frame in range(frame_number - padding, frame_number + padding + 1, 1) ]
     
     # build the select string and skip the plus at the end
+    frame_number_selectstring = "\'"
     n_frames = len(frame_numbers)
     for idx, frame_number in enumerate(frame_numbers, start=1):
         frame_number_selectstring += ('eq(n,' + str(frame_number) + ')')
@@ -77,14 +77,23 @@ def ffmpeg_extract_thumbnails(video_filename: str, frames: list[FFMPEGFrameData]
     # drawtext=text='Frame 43':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,1)
 
     # ffmpeg -i SCTE_5.mxf -vf "select='eq(n\,29)+eq(n\,42)', drawtext=text='Frame 30':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,0)', 
-    #drawtext=text='Frame 43':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,1)'" -vsync 0 -vframes 2 -q:v 2 %03d.jpg
+    # drawtext=text='Frame 43':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,1)'" -vsync 0 -vframes 2 -q:v 2 %03d.jpg
     draw_text_command = ""
-    n_frames = len(frames)
-    for idx, frame in enumerate(frames, start=0):
-        #print(idx, frame.frame_number)
+    index = 0
+    for idx, frame in enumerate(frame_numbers, start=0):
+        if frame in orig_frame_numbers:
+            #print(frames[idx])
+            
+            text = "Frame_number " + str(frames[index].frame_number) + " Frame type " + frames[index].marker_type
+            print(idx, frame, text, index)
+            index+=1
+        else:
+            text = "PADDING FRAME"
+            print(idx, frame, text)
+
         
-        cmd = ("drawtext=text=\'Frame ", str(frame.frame_number), "\'", \
-               ":x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable=\'eq(n,", \
+        cmd = ("drawtext=text=\'", text, "\'", \
+               ":x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=yellow:boxborderw=10:borderw=1:enable=\'eq(n,", \
                str(idx), \
                ")\'"
         )

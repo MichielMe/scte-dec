@@ -57,6 +57,8 @@ def TestOldApi(IP: str, PORT: int, MSG_GET_ITEM_VALUES: int, COM_ANLYS_ANC_DATA:
     mydll.CloseConnection(Conn)
     print ("Closed connection..")
 
+def fake_anc_decode(anc_data):
+    return phabrix_preprocessor(anc_data)
 
 def print_like_phabrix_ui(dataframe) -> None:
     row = 0
