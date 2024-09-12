@@ -136,7 +136,7 @@ def convert_to_hex(dataframe) -> list:
 def skip_data(data) -> list:
     #print("1. SKIP DATA:\n", data)
     # skip the first 23 numbers, internal to Phabrix, the last 9 also seem irrelevant
-    return data[22:-8]
+    return data[23:-9]
 
 # make helper function to make processing pipeline of data
 def compose(*functions):
