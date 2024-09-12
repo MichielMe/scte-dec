@@ -3,7 +3,7 @@ from MXFDecoder import DecodeMXF
 
 if __name__ == "__main__":    
     #DecodeANC(oneshot=False)
-    DecodeMXF("MXFInputfiles/SCTE_56.mxf")
+    DecodeMXF("MXFInputfiles/SCTE_62.mxf")
     
 
     

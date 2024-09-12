@@ -6,6 +6,7 @@ from math import modf
 from string import Template
 from timecode import Timecode
 from typing import NamedTuple
+from Tools.SCTE_104_Tools import SCTE104Packet
 
 DID_SDID = ["4105", "4107", "4108"]
 DID_SDID_TO_EXTRACT = "4107"
@@ -30,18 +31,40 @@ class Packet(NamedTuple):
 
 class FFMPEGFrameData(NamedTuple):
     frame_number: int
-    frame_text_data: str
+    marker_type: str
+    frame_text_data: SCTE104Packet
 
-def ffmpeg_extract_thumbnails(video_filename: str, frame_numbers: list[int], padding: int=0, folder: str="") -> FFMPEGResult:
+def extract_frame_numbers(frame_data: list[FFMPEGFrameData]) -> list[int]:
+    frame_number_list = []
+    for frame in frame_data:
+        frame_number_list.append(frame.frame_number)
+    return frame_number_list
+
+def ffmpeg_extract_thumbnails(video_filename: str, frames: list[FFMPEGFrameData], padding: int=0, folder: str="") -> FFMPEGResult:
+    frame_numbers = extract_frame_numbers(frames)
+    orig_frame_numbers = frame_numbers
     print("Frame nrs:", frame_numbers)
-    frame_number_selectstring = "\'"
-
-    # if padding is needed, overwrite the frame_numbers list with a new list to add each frame number plus/minus the padding size
-    # e.g. frame_numbers [5, 177] with padding size 3 will become: [2, 3, 4, 5, 6, 7, 8, 174, 175, 176, 177, 178, 179, 180]
+    '''
+    if padding is needed, overwrite the frame_numbers list with a new list to add each frame number plus/minus the padding size
+    e.g. frame_numbers [5, 177] with padding size 3 will become: [2, 3, 4, 5, 6, 7, 8, 174, 175, 176, 177, 178, 179, 180]
+    X = len(frame_numbers), Y=(PADDING*2)+1 = ((PADDING * 2 ) + 1) * len(frame_numbers) = TOTAL FRAMES
+    
+    FRAMES | PADDING | TOTAL FRAMES
+    0           0           0
+    1           0           1
+    2           0           2
+    1           1           3
+    2           1           6
+    3           1           9
+    3           2           15
+    3           3           21
+    3           5           = ((5 * 2) + 1) * 3 = 33
+    '''
     if padding > 0:
         frame_numbers = [frame for frame_number in frame_numbers for frame in range(frame_number - padding, frame_number + padding + 1, 1) ]
     
     # build the select string and skip the plus at the end
+    frame_number_selectstring = "\'"
     n_frames = len(frame_numbers)
     for idx, frame_number in enumerate(frame_numbers, start=1):
         frame_number_selectstring += ('eq(n,' + str(frame_number) + ')')
@@ -49,7 +72,39 @@ def ffmpeg_extract_thumbnails(video_filename: str, frame_numbers: list[int], pad
             frame_number_selectstring += '+'
     frame_number_selectstring += "\'"
 
-    print("Frame nrs with padding:", frame_numbers)
+    # build draw text command
+    # drawtext=text='Frame 30':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,0)', 
+    # drawtext=text='Frame 43':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,1)
+
+    # ffmpeg -i SCTE_5.mxf -vf "select='eq(n\,29)+eq(n\,42)', drawtext=text='Frame 30':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,0)', 
+    # drawtext=text='Frame 43':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,1)'" -vsync 0 -vframes 2 -q:v 2 %03d.jpg
+    draw_text_command = ""
+    index = 0
+    for idx, frame in enumerate(frame_numbers, start=0):
+        if frame in orig_frame_numbers:
+            #print(frames[idx])
+            
+            text = "Frame_number " + str(frames[index].frame_number) + " Frame type " + frames[index].marker_type
+            print(idx, frame, text, index)
+            index+=1
+        else:
+            text = "PADDING FRAME"
+            print(idx, frame, text)
+
+        
+        cmd = ("drawtext=text=\'", text, "\'", \
+               ":x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=yellow:boxborderw=10:borderw=1:enable=\'eq(n,", \
+               str(idx), \
+               ")\'"
+        )
+        draw_text_command += "".join(cmd)
+        if idx < n_frames-1:
+            draw_text_command += ","
+        #print(draw_text_command)
+    #draw_text_command += "\'"
+        
+    #print("draw txt cmd:", draw_text_command)
+    #print("Frame nrs with padding:", frame_numbers)
     outputpath = os.path.join(folder, "frames%d.jpg")
 
     '''
@@ -67,13 +122,19 @@ def ffmpeg_extract_thumbnails(video_filename: str, frame_numbers: list[int], pad
     # -vf filtergraph (output)
     # Create the filtergraph specified by filtergraph and use it to filter the stream. 
     # select only the frame(s) we supply
-    commands.extend(("-vf", "select=" + frame_number_selectstring))
+    #commands.extend(("-vf", "select=" + frame_number_selectstring))
+    filter_cmd = "".join([frame_number_selectstring, ",", draw_text_command])
+    #filter_cmd = frame_number_selectstring
+    commands.extend(("-vf", "select=" + filter_cmd))
     # -vsync 0 was previously used, but is deprecated
     commands.extend(("-fps_mode", "passthrough"))
     # stop processing after we outputted our requested frames, this speeds up the process considerably
-    commands.extend(("-frames", str(n_frames)))
+    commands.extend(("-frames", str(len(frame_numbers))))
     # write output
     commands.append(outputpath)
+
+    
+    print(commands)
 
     
     # -vf "drawtext=text='%{gmtime}.%{eif\:mod(n, 30)\:d\:02d}': fontsize=40: fontcolor=white: x=10: y=10: box=1: boxborderw=10: boxcolor=black,fps=30"
