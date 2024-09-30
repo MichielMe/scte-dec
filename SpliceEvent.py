@@ -241,5 +241,11 @@ class SpliceEvent:
         else:
             pass #notimplemented
 
+    def get_segmentation_upid(self):
+        return self.as_dict["ops"][1]["data"]["segmentation_upid"]
+    
+    def get_segmentation_type_id(self):
+        return self.as_dict["ops"][1]["data"]["segmentation_type_id"]
+
     def set_pre_roll_time(self, time):
         self.as_dict["ops"][0]["data"]["pre_roll_time"] = time 
