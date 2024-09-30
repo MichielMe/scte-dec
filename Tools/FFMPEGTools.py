@@ -83,8 +83,11 @@ def ffmpeg_extract_thumbnails(video_filename: str, frames: list[FFMPEGFrameData]
     draw_text_command = ""
     
     for idx, frame in enumerate(frame_numbers, start=0):
-        if frame in orig_frame_numbers:          
-            text = "Frame_number " + str(frames[orig_frame_numbers.index(frame)].frame_number) + " Frame type " + frames[orig_frame_numbers.index(frame)].marker_type
+        if frame in orig_frame_numbers:
+            if frames[orig_frame_numbers.index(frame)].frame_text_data == None:
+                text = "Frame_number " + str(frames[orig_frame_numbers.index(frame)].frame_number) + " Frame type " + frames[orig_frame_numbers.index(frame)].marker_type
+            else:
+                text = "Frame_number " + str(frames[orig_frame_numbers.index(frame)].frame_number) + " Frame type " + frames[orig_frame_numbers.index(frame)].marker_type + "\n" + frames[orig_frame_numbers.index(frame)].frame_text_data.segmentation_type['name'] 
             print(idx, frame, text)
             
         else:
