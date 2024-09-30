@@ -15,7 +15,7 @@ class SCTE104Packet:
     segmentation_type: str
 
 def decode_SCTE104(hex_string) -> SpliceEvent:
-    print("Decoding:", hex_string)
+    #print("Decoding:", hex_string)
     bitarray_data = bitstring.BitString(bytes=bytes.fromhex(hex_string))
     return SpliceEvent(bitarray_data)
 
