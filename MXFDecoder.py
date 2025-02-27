@@ -1,4 +1,5 @@
 import sys
+import argparse
 from pathlib import Path
 from Tools.FFMPEGTools import ffprobe, parse_ffprobe_output, ffmpeg_extract_thumbnails, FFMPEGFrameData
 from Tools.SCTE_104_Tools import decode_SCTE104, SCTE104Packet
@@ -61,4 +62,10 @@ def DecodeMXF(filename):
     else:
         print("ERROR while reading {}".format(filename))
         print(ffprobe_result.error, file=sys.stderr)
+
+if __name__ == "__main__":
+    cli_parser = argparse.ArgumentParser(description="Read MXF file and parse SCTE104 Messages, output thumbnails")
+    cli_parser.add_argument("filename", help="Path to MXF file")
+    args = cli_parser.parse_args()
+    DecodeMXF(args.filename)
         
