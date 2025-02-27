@@ -12,3 +12,4 @@ ffprobe.exe
 MXFInputfiles/
 TelenetDebugXLS/
 results/
+.DS_Store
