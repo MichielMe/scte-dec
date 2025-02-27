@@ -36,4 +36,10 @@ def decode_SCTE104_to_file(hex_string):
 def decode_SCTE104_to_SCTE104Packet(hex_string) -> SCTE104Packet:
     bitarray_data = bitstring.BitString(bytes=bytes.fromhex(hex_string))
     result = SpliceEvent(bitarray_data)
-    return (SCTE104Packet(result.get_splice_event_timestamp(), result.get_pre_roll_time(), result.get_segmentation_event_id, result.get_duration, result.get_segmentation_upid(), result.get_segmentation_type_id()))
+    return (SCTE104Packet(
+            result.get_splice_event_timestamp(), 
+            result.get_pre_roll_time(),
+            result.get_segmentation_event_id(),
+            result.get_duration(),
+            result.get_segmentation_upid(),
+            result.get_segmentation_type_id()))

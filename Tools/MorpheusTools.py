@@ -141,6 +141,7 @@ def log_filtered_kerneldiag_logs(line, ignore_keep_alive=False):
                 log.info("@UTC %s (frac: %s) ~ UTC Corrected %s (frac: %s): %s", scte_event_in_log["timecode"], scte_event_in_log["timecode_frac"], scte_event_in_log["timecode_utc_adjusted"], scte_event_in_log["timecode_utc_adjusted_frac"], scte_event_in_log["data"])
                 #print("SCTE104 Message found in logs:", single_log_line["data"])
                 log.info(decode_SCTE104_to_SCTE104Packet(scte_event_in_log["data"]))
+                
         except ReadError:
             print("error decoding: ", scte_event_in_log)
 
