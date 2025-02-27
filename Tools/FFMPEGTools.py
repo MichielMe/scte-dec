@@ -41,6 +41,8 @@ def extract_frame_numbers(frame_data: list[FFMPEGFrameData]) -> list[int]:
     return frame_number_list
 
 def ffmpeg_extract_thumbnails(video_filename: str, frames: list[FFMPEGFrameData], padding: int=0, folder: str="") -> FFMPEGResult:
+    for frame in frames:
+        print(frame.frame_number, frame.marker_type)
     frame_numbers = extract_frame_numbers(frames)
     orig_frame_numbers = frame_numbers
     print("Frame nrs:", frame_numbers)
@@ -79,18 +81,18 @@ def ffmpeg_extract_thumbnails(video_filename: str, frames: list[FFMPEGFrameData]
     # ffmpeg -i SCTE_5.mxf -vf "select='eq(n\,29)+eq(n\,42)', drawtext=text='Frame 30':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,0)', 
     # drawtext=text='Frame 43':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,1)'" -vsync 0 -vframes 2 -q:v 2 %03d.jpg
     draw_text_command = ""
-    index = 0
+    
     for idx, frame in enumerate(frame_numbers, start=0):
         if frame in orig_frame_numbers:
-            #print(frames[idx])
+            if frames[orig_frame_numbers.index(frame)].frame_text_data == None:
+                text = "Frame_number " + str(frames[orig_frame_numbers.index(frame)].frame_number) + " Frame type " + frames[orig_frame_numbers.index(frame)].marker_type
+            else:
+                text = "Frame_number " + str(frames[orig_frame_numbers.index(frame)].frame_number) + " Frame type " + frames[orig_frame_numbers.index(frame)].marker_type + "\n" + frames[orig_frame_numbers.index(frame)].frame_text_data.segmentation_type['name'] 
+            print(idx, frame, text)
             
-            text = "Frame_number " + str(frames[index].frame_number) + " Frame type " + frames[index].marker_type
-            print(idx, frame, text, index)
-            index+=1
         else:
             text = "PADDING FRAME"
             print(idx, frame, text)
-
         
         cmd = ("drawtext=text=\'", text, "\'", \
                ":x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=yellow:boxborderw=10:borderw=1:enable=\'eq(n,", \
