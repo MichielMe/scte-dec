@@ -11,8 +11,10 @@ from dataclasses_json import LetterCase, Undefined, dataclass_json
 class SCTE104Packet:
     splice_event_timestamp: str
     pre_roll_time: int
+    segmentation_event_id: int
+    duration: int
     segmentation_upid: str
-    segmentation_type: str
+    segmentation_type: dict
 
 def decode_SCTE104(hex_string) -> SpliceEvent:
     #print("Decoding:", hex_string)

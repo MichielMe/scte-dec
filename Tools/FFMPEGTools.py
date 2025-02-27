@@ -90,6 +90,7 @@ def ffmpeg_extract_thumbnails(video_filename: str, frames: list[FFMPEGFrameData]
                        " Frame type = " + \
                        frames[orig_frame_numbers.index(frame)].marker_type
             else:
+                print (frames[orig_frame_numbers.index(frame)])
                 text = "Frame_number = " + \
                        str(frames[orig_frame_numbers.index(frame)].frame_number) + \
                        " Frame type = " + frames[orig_frame_numbers.index(frame)].marker_type + \
