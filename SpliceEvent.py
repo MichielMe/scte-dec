@@ -240,12 +240,18 @@ class SpliceEvent:
             return (splice_event_timestamp+preroll)
         else:
             pass #notimplemented
-
+    
     def get_segmentation_upid(self):
         return self.as_dict["ops"][1]["data"]["segmentation_upid"]
     
     def get_segmentation_type_id(self):
         return self.as_dict["ops"][1]["data"]["segmentation_type_id"]
+    
+    def get_segmentation_event_id(self):
+        return self.as_dict["ops"][1]["data"]["segmentation_event_id"]
+    
+    def get_duration(self):
+        return self.as_dict["ops"][1]["data"]["duration"] #seconds
 
     def set_pre_roll_time(self, time):
-        self.as_dict["ops"][0]["data"]["pre_roll_time"] = time 
+        self.as_dict["ops"][0]["data"]["pre_roll_time"] = time
