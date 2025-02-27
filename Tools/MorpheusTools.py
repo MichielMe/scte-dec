@@ -5,7 +5,7 @@ import pytz
 import datetime
 from datetime import timezone
 from timecode import Timecode
-from Tools.SCTE_104_Tools import decode_SCTE104, decode_SCTE104_to_output
+from Tools.SCTE_104_Tools import decode_SCTE104, decode_SCTE104_to_SCTE104Packet
 from bitstring import ReadError
 from Tools.PhabrixTools import fake_anc_decode
 
@@ -25,14 +25,16 @@ def list_to_string(my_list):
     for item in my_list:
         line = line + item
     return line
-
+'''
 def convert_to_int(dataframe):
     raw_anc = ['1023', '1023', '577', '263', '557', '264', '767', '767', '512', '300', '512', '512', '731', '512', '512', '512', '258', '275', '518', '20', '524', '277', '258', '257', '260', '512', '258', '287', '320', '257', '267', '512', '530', '512', '512', '512', '512', '512', '512', '572', '40', '527', '512', '272', '512', '512', '512', '512', '512', '512', '512', '512', '415', '0', '0', '0', '0', '0', '0', '0', '0']
     print("bitshift:", [(int(hex_data) >> 2) for hex_data in raw_anc])
     print(dataframe, type(dataframe))
 
     return [(int(hex_data.zfill(2) , 16)) for hex_data in dataframe]
+'''
 
+'''
 def make_fake_phabrix_anc_data(sent_driver_data_to_injector):
     sent_driver_data_to_injector = filter_sent_driver_data_to_injector(sent_driver_data_to_injector)
     raw_anc = ['1023', '1023', '577', '263', '557', '264', '767', '767', '512', '300', '512', '512', '731', '512', '512', '512', '258', '275', '518', '20', '524', '277', '258', '257', '260', '512', '258', '287', '320', '257', '267', '512', '530', '512', '512', '512', '512', '512', '512', '572', '40', '527', '512', '272', '512', '512', '512', '512', '512', '512', '512', '512', '415', '0', '0', '0', '0', '0', '0', '0', '0']
@@ -48,6 +50,7 @@ def make_fake_phabrix_anc_data(sent_driver_data_to_injector):
     
 
     #chunks = [sent_driver_data_to_injector[i:i+chunk_length] for i in range(0, len(sent_driver_data_to_injector), chunk_length)]
+'''
 
 '''
 The SCTE104 data that is logged is in an annoying format
@@ -110,24 +113,34 @@ def log_filtered_kerneldiag_logs(line, ignore_keep_alive=False):
         single_log_line["device"] = result[4].split(",")[0]
         # grab the sent SCTE104 data from the automation driver to the injector card
         sent_driver_data_to_injector = result[5][1:-14]
-        print(sent_driver_data_to_injector)
+        #print(sent_driver_data_to_injector)
         single_log_line["orig"] = sent_driver_data_to_injector
+        '''
+        The Morpheus preprocessor function combines two functions:
+        We convert the data from the log file into a list of only the hex data
+        Then we convert that list into one single data string.
+        This data string is in the format that the SCTE104 decoder functions expect.
+        So a log line 0xff [0] 0xff [1] 0x0 [2] etc. will become 0xff 0xff 0x0
+        And then will become "ffff00" etc.
+
+        The dict item "data" is what in the end will be parsed by the SCTE104 decoder.
+        '''
         single_log_line["data"] = morpheus_preprocessor(sent_driver_data_to_injector)
     
         
         all_log_lines.append(single_log_line)
 
     for scte_event_in_log in all_log_lines:
-        print(scte_event_in_log)
+        #print(scte_event_in_log)
         try:
             # 0003000dffffffff0000 = keep_alive message
             if ignore_keep_alive == True and "0003000dffffffff0000" in scte_event_in_log["data"]:
                     # skip keep alive messages
                     pass
             else:
-                log.info("@ %s (%s) ~ %s (%s)", scte_event_in_log["timecode"], scte_event_in_log["timecode_frac"], scte_event_in_log["timecode_utc_adjusted"], scte_event_in_log["timecode_utc_adjusted_frac"])
-                print("SCTE104 Message found in logs:", single_log_line["data"])
-                #decode_SCTE104_to_output(scte_event_in_log["data"])
+                log.info("@UTC %s (frac: %s) ~ UTC Corrected %s (frac: %s): %s", scte_event_in_log["timecode"], scte_event_in_log["timecode_frac"], scte_event_in_log["timecode_utc_adjusted"], scte_event_in_log["timecode_utc_adjusted_frac"], scte_event_in_log["data"])
+                #print("SCTE104 Message found in logs:", single_log_line["data"])
+                log.info(decode_SCTE104_to_SCTE104Packet(scte_event_in_log["data"]))
         except ReadError:
             print("error decoding: ", scte_event_in_log)
 
