@@ -85,17 +85,25 @@ def ffmpeg_extract_thumbnails(video_filename: str, frames: list[FFMPEGFrameData]
     for idx, frame in enumerate(frame_numbers, start=0):
         if frame in orig_frame_numbers:
             if frames[orig_frame_numbers.index(frame)].frame_text_data == None:
-                text = "Frame_number " + str(frames[orig_frame_numbers.index(frame)].frame_number) + " Frame type " + frames[orig_frame_numbers.index(frame)].marker_type
+                text = "Frame_number = " + \
+                       str(frames[orig_frame_numbers.index(frame)].frame_number) + \
+                       " Frame type = " + \
+                       frames[orig_frame_numbers.index(frame)].marker_type
             else:
-                text = "Frame_number " + str(frames[orig_frame_numbers.index(frame)].frame_number) + " Frame type " + frames[orig_frame_numbers.index(frame)].marker_type + "\n" + frames[orig_frame_numbers.index(frame)].frame_text_data.segmentation_type['name'] 
+                text = "Frame_number = " + \
+                       str(frames[orig_frame_numbers.index(frame)].frame_number) + \
+                       " Frame type = " + frames[orig_frame_numbers.index(frame)].marker_type + \
+                       "\n" + "Type = " + frames[orig_frame_numbers.index(frame)].frame_text_data.segmentation_type['name'] + \
+                       "\n" + "Event ID = " + str(frames[orig_frame_numbers.index(frame)].frame_text_data.segmentation_event_id) + \
+                       "\n" + "Duration = " + str(frames[orig_frame_numbers.index(frame)].frame_text_data.duration)
             print(idx, frame, text)
             
         else:
-            text = "PADDING FRAME"
+            text = "PADDING FRAME Frame number = " + str(frame)
             print(idx, frame, text)
         
         cmd = ("drawtext=text=\'", text, "\'", \
-               ":x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=yellow:boxborderw=10:borderw=1:enable=\'eq(n,", \
+               ":x=(w-tw)/2:y=(h-th):fontsize=24:fontcolor=yellow:boxborderw=10:borderw=1:box=1:boxcolor=black@0.5:enable=\'eq(n,", \
                str(idx), \
                ")\'"
         )
