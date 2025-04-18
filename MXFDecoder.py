@@ -10,7 +10,7 @@ PADDING = 3
 
 def DecodeMXF(filename):
     if not Path(filename).is_file():
-        print("Could not read file: " + filename)
+        print("File does not exist: " + filename)
         exit(1)
     ffprobe_result = ffprobe(filename)
     frame_number_list = []
