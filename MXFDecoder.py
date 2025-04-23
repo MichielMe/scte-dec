@@ -1,12 +1,12 @@
 import sys
 import argparse
 from pathlib import Path
-from Tools.FFMPEGTools import ffprobe, parse_ffprobe_output, ffmpeg_extract_thumbnails, FFMPEGFrameData
+from Tools.FFMPEGTools import ffprobe_analyze_and_save_json, parse_ffprobe_json_output, ffmpeg_extract_thumbnails, FFMPEGFrameData
 from Tools.SCTE_104_Tools import decode_SCTE104, SCTE104Packet
 import operator
 
 
-PADDING = 6
+PADDING = 3
 
 def DecodeMXF(filename):
     if not Path(filename).is_file():
@@ -18,11 +18,13 @@ def DecodeMXF(filename):
     outputfolder = outputfolder / (Path(filename).stem)
     outputfolder.mkdir(parents=True, exist_ok=True)
 
-    ffprobe_result = ffprobe(filename)
-    
-    if ffprobe_result.return_code == 0:
+    #ffprobe_result = ffprobe_analyze(filename)
+    output_file = outputfolder / "output.json"
+    if not output_file.is_file():
+        ffprobe_analyze_and_save_json(outputfolder, filename)
+    ffprobe_output = parse_ffprobe_json_output(output_file)
+    if  ffprobe_output != None:
         frame_number_list = []
-        ffprobe_output = parse_ffprobe_output(ffprobe_result.json)
         for scte104_packet in ffprobe_output:
             # strip:
             # DID Data Identifier
