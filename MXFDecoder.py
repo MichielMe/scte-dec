@@ -6,7 +6,7 @@ from Tools.SCTE_104_Tools import decode_SCTE104, SCTE104Packet
 import operator
 
 
-PADDING = 3
+PADDING = 6
 
 def DecodeMXF(filename):
     if not Path(filename).is_file():
@@ -24,11 +24,14 @@ def DecodeMXF(filename):
             # DC Data Count
             # from the packet as the next decoding step expects only the UDW (strip 4 times 2 hex bytes)
             result = decode_SCTE104(scte104_packet.anc_data[8:])      
-            print(result)      
+            #print(result)      
             if result.as_dict["timestamp"]["time_type"] == 0:
                 # add scte transition frame, no timestamp adjustment due to immediate trigger not containing timestamp information
                 frame_number_list.append(FFMPEGFrameData(scte104_packet.pts_frame_number, "Anouncement Frame", None))
                 print ('@frame_number: {} - file timestamp: {} - utc timestamp: {}'.format(scte104_packet.pts_frame_number, scte104_packet.pts_time, scte104_packet.utc_time))
+            if result.as_dict["timestamp"]["time_type"] == 1:
+                # keep alive message
+                print ('@frame_number: {} - file timestamp: {} - utc timestamp: {} - message type: {}'.format(scte104_packet.pts_frame_number, scte104_packet.pts_time, scte104_packet.utc_time, result.as_dict["reserved"]["type"]))
             if result.as_dict["timestamp"]["time_type"] == 2:
                 # print(result)
                 # add announcement frame - on this frame we announced an incoming trigger
