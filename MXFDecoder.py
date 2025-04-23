@@ -19,8 +19,9 @@ def DecodeMXF(filename):
     outputfolder.mkdir(parents=True, exist_ok=True)
 
     ffprobe_result = ffprobe(filename)
-    frame_number_list = []
+    
     if ffprobe_result.return_code == 0:
+        frame_number_list = []
         ffprobe_output = parse_ffprobe_output(ffprobe_result.json)
         for scte104_packet in ffprobe_output:
             # strip:
@@ -57,10 +58,10 @@ def DecodeMXF(filename):
                 print(packet)
                 #print(result)
 
-        frame_number_list = sorted(frame_number_list, key=operator.attrgetter("frame_number"))
+            frame_number_list = sorted(frame_number_list, key=operator.attrgetter("frame_number"))
         
-        print("Extracting frame thumbnails..")
-        ffmpeg_result = ffmpeg_extract_thumbnails(filename, frame_number_list, PADDING, outputfolder)
+            print("Extracting frame thumbnails..")
+            ffmpeg_result = ffmpeg_extract_thumbnails(filename, frame_number_list, PADDING, outputfolder)
         if (ffmpeg_result.return_code != 0):
             print(ffmpeg_result.error, file=sys.stderr)
     else:
