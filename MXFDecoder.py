@@ -12,6 +12,12 @@ def DecodeMXF(filename):
     if not Path(filename).is_file():
         print("File does not exist: " + filename)
         exit(1)
+
+    # create folder named like inputfile in the results root folder, this is to keep all relevent output and data contained to one clear folder
+    outputfolder = Path('results')
+    outputfolder = outputfolder / (Path(filename).stem)
+    outputfolder.mkdir(parents=True, exist_ok=True)
+
     ffprobe_result = ffprobe(filename)
     frame_number_list = []
     if ffprobe_result.return_code == 0:
@@ -50,11 +56,6 @@ def DecodeMXF(filename):
                 print('|_> @frame_number: {}/(marker start/end splice event (=timestamp+preroll (utc)): {}'.format(transition_frame, result.get_splice_event_timestamp()))
                 print(packet)
                 #print(result)
-                
-        # output the frame thumbnails to folder named like inputfile
-        outputfolder = Path('results')
-        outputfolder = outputfolder / (Path(filename).stem)
-        outputfolder.mkdir(parents=True, exist_ok=True)
 
         frame_number_list = sorted(frame_number_list, key=operator.attrgetter("frame_number"))
         
