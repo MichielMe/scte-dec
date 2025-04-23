@@ -1,6 +1,7 @@
 import os
 import subprocess
 import json
+from pathlib import Path
 import datetime
 from math import modf
 from string import Template
@@ -191,7 +192,7 @@ FFProbe example data
 }
 '''
 
-def ffprobe(fname: str) -> FFProbeResult:
+def ffprobe_analyze(fname: str) -> FFProbeResult:
     commands = ["ffprobe", 
                 "-v", "quiet", 
                 "-print_format", "json",
@@ -206,6 +207,38 @@ def ffprobe(fname: str) -> FFProbeResult:
                          json=result.stdout,
                          error=result.stderr)
 
+def ffprobe_analyze_and_save_json(output_dir: Path, fname: str) -> None:
+    commands = ["ffprobe", 
+                "-v", "quiet", 
+                "-print_format", "json",
+                "-show_format", 
+                "-select_streams", "2",
+                "-show_packets",
+                "-show_data",
+                fname]
+    print('Reading file: {}'.format(fname))
+    command = subprocess.run(commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+    result = FFProbeResult(return_code=command.returncode,
+                         json=command.stdout,
+                         error=command.stderr)
+    if result.return_code != 0:
+        print(f"Error analyzing file: {result.error}")
+        return None
+    try:
+        # Ensure the output directory exists
+        output_dir.mkdir(parents=True, exist_ok=True)
+        # Create the full file path
+        output_file = output_dir / "output.json"
+
+        parsed_json: dict = json.loads(result.json)
+        
+        with output_file.open("w", encoding="utf-8") as f:
+            json.dump(parsed_json, f, indent=2)
+        print(f"JSON result written to {output_file}")
+    except json.JSONDecodeError as e:
+        print(f"Failed to parse JSON: {e}")
+        return None
+
 def parse_ffprobe_output(ffprobe_result: FFProbeResult) -> list[Packet]:
     all_packets = []
     data = json.loads(ffprobe_result)
@@ -215,6 +248,22 @@ def parse_ffprobe_output(ffprobe_result: FFProbeResult) -> list[Packet]:
         if anc_packet != None:
             all_packets.append(anc_packet)
     return all_packets
+
+def parse_ffprobe_json_output(input_file: Path) -> list[Packet]:
+    try:
+        with input_file.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+            all_packets = []
+            start_timecode = data['format']['tags']['timecode']
+            for packet in data['packets']:
+                anc_packet = extract(packet['data'], packet['pts_time'], start_timecode, packet['pts'])
+                if anc_packet != None:
+                    all_packets.append(anc_packet)
+        return all_packets
+    except json.JSONDecodeError as e:
+        print(f"Failed to parse JSON: {e}")
+        return None
+       
 
 def ms_to_frames(ms: int) -> int:
     return round((ms / FRAME_DURATION) * 1000)
