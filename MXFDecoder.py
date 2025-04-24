@@ -6,7 +6,7 @@ from Tools.SCTE_104_Tools import decode_SCTE104, SCTE104Packet
 import operator
 
 
-PADDING = 3
+PADDING = 1
 
 def DecodeMXF(filename):
     if not Path(filename).is_file():
@@ -21,10 +21,13 @@ def DecodeMXF(filename):
     #ffprobe_result = ffprobe_analyze(filename)
     output_file = outputfolder / "output.json"
     if not output_file.is_file():
+        print("DEBUG: There was no previous ffprobe result, reading the MXF file and extracting the data..")
         ffprobe_analyze_and_save_json(outputfolder, filename)
+    print("DEBUG: Parse ffprobe output..")
     ffprobe_output = parse_ffprobe_json_output(output_file)
     if  ffprobe_output != None:
         frame_number_list = []
+        print("DEBUG: gather SCTE packet results..")
         for scte104_packet in ffprobe_output:
             # strip:
             # DID Data Identifier
@@ -37,12 +40,18 @@ def DecodeMXF(filename):
             if result.as_dict["timestamp"]["time_type"] == 0:
                 # add scte transition frame, no timestamp adjustment due to immediate trigger not containing timestamp information
                 frame_number_list.append(FFMPEGFrameData(scte104_packet.pts_frame_number, "Anouncement Frame", None))
-                print ('@frame_number: {} - file timestamp: {} - utc timestamp: {}'.format(scte104_packet.pts_frame_number, scte104_packet.pts_time, scte104_packet.utc_time))
+                print ('@frame_number: {} - file timestamp: {} - utc timestamp: {} - message type: {}'.format(scte104_packet.pts_frame_number, scte104_packet.pts_time, scte104_packet.utc_time, result.as_dict["reserved"]["type"]))
+                print("*** 1")
+                print(result)
             if result.as_dict["timestamp"]["time_type"] == 1:
                 # keep alive message
                 print ('@frame_number: {} - file timestamp: {} - utc timestamp: {} - message type: {}'.format(scte104_packet.pts_frame_number, scte104_packet.pts_time, scte104_packet.utc_time, result.as_dict["reserved"]["type"]))
-            if result.as_dict["timestamp"]["time_type"] == 2:
-                # print(result)
+                print("*** 2")
+                print(result)
+            if result.as_dict["timestamp"]["time_type"] == 2 and result.as_dict["reserved"]["type"] != "alive_request_data":
+                print(" ")
+                print("New packet: raw decode:")
+                print(result)
                 # add announcement frame - on this frame we announced an incoming trigger
                 frame_number_list.append(FFMPEGFrameData(scte104_packet.pts_frame_number, "Anouncement Frame", None))
                 # the morpheus driver took this margin to announce the scte packet
@@ -62,13 +71,12 @@ def DecodeMXF(filename):
 
             frame_number_list = sorted(frame_number_list, key=operator.attrgetter("frame_number"))
         
-            print("Extracting frame thumbnails..")
-            ffmpeg_result = ffmpeg_extract_thumbnails(filename, frame_number_list, PADDING, outputfolder)
+        print("Extracting frame thumbnails..")
+        ffmpeg_result = ffmpeg_extract_thumbnails(filename, frame_number_list, PADDING, outputfolder)
         if (ffmpeg_result.return_code != 0):
             print(ffmpeg_result.error, file=sys.stderr)
     else:
         print("ERROR while reading {}".format(filename))
-        print(ffprobe_result.error, file=sys.stderr)
 
 if __name__ == "__main__":
     cli_parser = argparse.ArgumentParser(description="Read MXF file and parse SCTE104 Messages, output thumbnails")
