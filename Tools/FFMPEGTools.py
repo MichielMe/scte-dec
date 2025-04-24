@@ -43,10 +43,10 @@ def extract_frame_numbers(frame_data: list[FFMPEGFrameData]) -> list[int]:
 
 def ffmpeg_extract_thumbnails(video_filename: str, frames: list[FFMPEGFrameData], padding: int=0, folder: str="") -> FFMPEGResult:
     for frame in frames:
-        print(frame.frame_number, frame.marker_type)
+        print("DEBUG: In frame: {}, there is a SCTE message: {}".format(frame.frame_number, frame.marker_type))
     frame_numbers = extract_frame_numbers(frames)
     orig_frame_numbers = frame_numbers
-    print("Frame nrs:", frame_numbers)
+    print("DEBUG: Frame nrs with SCTE data:", frame_numbers)
     '''
     if padding is needed, overwrite the frame_numbers list with a new list to add each frame number plus/minus the padding size
     e.g. frame_numbers [5, 177] with padding size 3 will become: [2, 3, 4, 5, 6, 7, 8, 174, 175, 176, 177, 178, 179, 180]
@@ -91,18 +91,18 @@ def ffmpeg_extract_thumbnails(video_filename: str, frames: list[FFMPEGFrameData]
                        " Frame type = " + \
                        frames[orig_frame_numbers.index(frame)].marker_type
             else:
-                print (frames[orig_frame_numbers.index(frame)])
+                # print (frames[orig_frame_numbers.index(frame)])
                 text = "Frame_number = " + \
                        str(frames[orig_frame_numbers.index(frame)].frame_number) + \
                        " Frame type = " + frames[orig_frame_numbers.index(frame)].marker_type + \
                        "\n" + "Type = " + frames[orig_frame_numbers.index(frame)].frame_text_data.segmentation_type['name'] + \
                        "\n" + "Event ID = " + str(frames[orig_frame_numbers.index(frame)].frame_text_data.segmentation_event_id) + \
                        "\n" + "Duration = " + str(frames[orig_frame_numbers.index(frame)].frame_text_data.duration)
-            print(idx, frame, text)
+            # print(idx, frame, text)
             
         else:
             text = "PADDING FRAME Frame number = " + str(frame)
-            print(idx, frame, text)
+            # print(idx, frame, text)
         
         cmd = ("drawtext=text=\'", text, "\'", \
                ":x=(w-tw)/2:y=(h-th):fontsize=24:fontcolor=yellow:boxborderw=10:borderw=1:box=1:boxcolor=black@0.5:enable=\'eq(n,", \
@@ -120,10 +120,7 @@ def ffmpeg_extract_thumbnails(video_filename: str, frames: list[FFMPEGFrameData]
     outputpath = os.path.join(folder, "frames%d.jpg")
 
     '''
-    ffmpeg -i SCTE_5.mxf -vf "select='eq(n\,29)+eq(n\,42)', 
-    drawtext=text='Frame 30':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,0)', 
-    drawtext=text='Frame 43':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,1)'" 
-    -vsync 0 -vframes 2 %03d.jpg
+    ffmpeg -i SCTE_5.mxf -vf "select='eq(n\,29)+eq(n\,42)',drawtext=text='Frame 30':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,0)',drawtext=text='Frame 43':x=(w-tw)/2:y=(h-th)/2:fontsize=24:fontcolor=white:enable='eq(n,1)'" -vsync 0 -vframes 2 %03d.jpg
     '''
 
     # write each supplied frame number to a jpeg thumbnail  
@@ -146,11 +143,11 @@ def ffmpeg_extract_thumbnails(video_filename: str, frames: list[FFMPEGFrameData]
     commands.append(outputpath)
 
     
-    print(commands)
+    # print(commands)
 
     
     # -vf "drawtext=text='%{gmtime}.%{eif\:mod(n, 30)\:d\:02d}': fontsize=40: fontcolor=white: x=10: y=10: box=1: boxborderw=10: boxcolor=black,fps=30"
-    
+    print("Writing thumbnail files using FFMPEG.")
     result = subprocess.run(commands, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     return FFMPEGResult(return_code=result.returncode,
                         args=result.args, 
@@ -250,6 +247,40 @@ def parse_ffprobe_output(ffprobe_result: FFProbeResult) -> list[Packet]:
     return all_packets
 
 def parse_ffprobe_json_output(input_file: Path) -> list[Packet]:
+    '''
+    At the end of a ffprobe output, there is some metadata about the file,
+    there is some data of interest here.
+    We have special interest in the format/tags/timecode data since it contains the first seen timecode which we will base our offsets on.
+
+
+    "format": {
+    "filename": "MXFInputfiles/SCTE101.mxf",
+    "nb_streams": 3,
+    "nb_programs": 0,
+    "nb_stream_groups": 0,
+    "format_name": "mxf",
+    "format_long_name": "MXF (Material eXchange Format)",
+    "start_time": "0.000000",
+    "duration": "12598.000000",
+    "size": "194019293679",
+    "bit_rate": "123206409",
+    "probe_score": 100,
+    "tags": {
+      "operational_pattern_ul": "060e2b34.04010101.0d010201.01010900",
+      "uid": "b26f4767-e318-101f-801f-00d0281f79b5",
+      "generation_uid": "c66f4767-e318-101f-b289-00d0281f79b5",
+      "company_name": "Omneon Inc.",
+      "product_name": "Omneon Media Subsystem",
+      "modification_date": "2025-04-14T03:49:01.784000Z",
+      "product_version": "9.8.0.0.release",
+      "product_version_num": "9.8.0.0.1",
+      "application_platform": "Omneon Media Api (mqx)    ",
+      "product_uid": "00000000-0000-1000-8000-050e0b010602",
+      "material_package_umid": "0x060A2B340101010501010D23130031C54A734767E318101FBFA300D0281F79B5",
+      "timecode": "05:50:02:00"
+      }
+    }
+    '''
     try:
         with input_file.open("r", encoding="utf-8") as f:
             data = json.load(f)
