@@ -1,4 +1,4 @@
-from scte.Scte104.SpliceEvent import SpliceEvent
+from SpliceEvent import SpliceEvent
 import bitstring
 from dataclasses import dataclass
 from typing import List
