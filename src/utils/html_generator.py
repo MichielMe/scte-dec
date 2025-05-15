@@ -197,11 +197,7 @@ select {
     z-index: 2;
 }
 
-.frame-item:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
-    z-index: 2;
-}
+
 
 .frame-item.announcement-frame {
     border-top: 5px solid #ffc107;
@@ -741,6 +737,16 @@ def generate_frame_html_item(frame_path: Path, frame_data: Dict[str, Any]) -> st
         info_html += f"<p><strong>Event ID:</strong> {scte_data.get('segmentation_event_id', 'N/A')}</p>"
         info_html += f"<p><strong>Duration:</strong> {scte_data.get('duration', 'N/A')} seconds</p>"
         info_html += f"<p><strong>Type:</strong> {segmentation_type}</p>"
+        info_html += f"<p><strong>UPID:</strong> {scte_data.get('segmentation_upid', 'N/A')}</p>"
+
+        # Add any additional segmentation type details if available
+        if isinstance(scte_data.get('segmentation_type'), dict):
+            seg_type = scte_data['segmentation_type']
+            for key, value in seg_type.items():
+                if key != 'name':  # Skip name since we already showed it as Type
+                    # Convert key from snake_case to Title Case for display
+                    display_key = ' '.join(word.capitalize() for word in key.split('_'))
+                    info_html += f"<p><strong>{display_key}:</strong> {value}</p>"
 
     # If no specific info was added, at least show the frame number and type
     if not info_html:
