@@ -1,45 +1,123 @@
-# SCTE decoder repo
-## Introductie
-Omstreeks 2023 heeft de VRT een samenwerkingsverband aangegaan met Telenet en Proximus om SCTE-markeringen in het signaal in te voegen om advertisement blokken "un-skippable" te maken (met opt-out optie).
+# SCTE Decoder
 
-Eén van de grote redenen is dat deze un-skippable blokken een hogere commerciëele waarde hebben voor adverteerders. En zo vloeien er onrechtstreeks meer reclame inkomsten terug naar de VRT.
-## Documentatie SCTE-standaarden
-Confluence pagina:
+## Introduction
 
-https://vrt-prod.atlassian.net/wiki/spaces/TVUZS/pages/16091094/Beschrijving+SCTE-standaard+en+implementatie+op+VRT
+This project provides tools for analyzing and decoding SCTE-104 markers in MXF files and live signals. It was developed to monitor SCTE signaling for advertisement blocks.
 
-## Technische monitoring
-De SCTE-signalisatie zit in de VANC van het signaal en moet dus gemeten worden. Deze repo bevat enkele scripts om dit proces te vereenvoudigen.
+## Project Structure
 
-De repo kan in drie grote blokken worden ingedeeld:
+The project has been refactored for better organization and modularity:
 
-1) SCTE analyse op basis van een opname in het MXF-formaat
+```
+scte-dec/
+├── main.py                 # Main entry point
+├── requirements.txt        # Dependencies
+├── src/                    # Source code
+│   ├── __init__.py         # Package initialization
+│   ├── cli/                # Command-line interfaces
+│   ├── decoders/           # Decoders for different formats
+│   ├── models/             # Data models
+│   ├── services/           # External services (FFmpeg, etc.)
+│   └── utils/              # Utility functions
+├── MXFInputfiles/          # Input MXF files
+└── results/                # Output results
+```
 
-Op basis van MXFDecoder.py kan er een opname worden uitgelezen. De VANC met SCTE-104 signalisatie zit in een aparte data track van de MXF, we lezen deze uit via ffprobe.
-Omdat deze opnames voornamelijk gebruikt wordt om de frame accuraatheid van de SCTE markeringen te meten, zit er ook functionaliteit in die de "frame boundaries" markeert rond de SCTE-triggers. De "announcement" frames worden gemarkeerd, en de "frame boundary"-frames worden gemarkeerd. 
+## Features
 
-Deze frames worden aan de hand van ffmpeg geexporteerd naar een aparte submap, op basis van de bestandsnaam van de opname. De SCTE informatie wordt hierop gewatermarked.
+The project consists of three main components:
 
-Gebruik:
-`MXFDecoder.py SCTE_opname.mxf`
+1. **MXF Decoder**: Analyzes SCTE-104 signaling in MXF recordings
+2. **Morpheus Log Decoder**: Processes Morpheus "KernelDiags" logs
+3. **Phabrix Decoder**: Connects to a Phabrix device to analyze live signals
 
-2) SCTE analyse op basis van de Morpheus "KernelDiags" logs
+## Installation
 
-Dit script kan gebruikt worden om de "KernelDiags" logs vanuit Morpheus te verwerken, om te kijken welke SCTE berichten er zijn verstuurd vanuit de automatisatie driver naar de injector kaart.
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/scte-dec.git
+cd scte-dec
 
-Gebruik:
-`MorpheusLogDecoder.py KernelDiags.log.2025-02-26`
+# Install dependencies
+pip install -r requirements.txt
+```
 
-3) SCTE analyse aan de hand van de Phabrix API
+## Usage
 
-Via dit script kan er verbonden worden op een Phabrix met API functionaliteit (zoals de RX200 in technisch lokaal 1G11) om live de triggers uit te meten. 
+### MXF Decoder
 
-Van zodra een Phabrix de juiste VANC data ontvangt, wordt de VANC data uitgelezen en via de gemeenschappelijke Tooling scripts uitgelezen in een voor de mens leesbaar formaat.
+The MXF Decoder extracts SCTE-104 signaling from MXF files and generates thumbnail images for the relevant frames.
 
+```bash
+# Basic usage
+python main.py MXFInputfiles/example.mxf
 
-Gebruik:
-`PhabrixDecoder.py`
+# With custom output folder
+python main.py -o custom_output MXFInputfiles/example.mxf
 
-In de code kan je nog "one-shot" True of False zetten, voor éénmalige uitlezing bij de eerste trigger of in loop.
+# With custom frame padding
+python main.py -p 3 MXFInputfiles/example.mxf
 
-4) In Tools/ zitten gemeenschappelijke functies en libraries om de SCTE-triggers te kunnen uitlezen.
+# Enable verbose output
+python main.py -v MXFInputfiles/example.mxf
+
+# Generate HTML viewer
+python main.py --html MXFInputfiles/example.mxf
+
+# Get help
+python main.py --help
+```
+
+### HTML Viewer
+
+The MXF Decoder can generate an interactive HTML viewer for the extracted frames. This viewer allows you to:
+
+- Browse through all detected frames
+- Filter frames by type (SCTE Trigger, Announcement, Padding)
+- Sort frames in ascending or descending order
+- View detailed SCTE-104 information for each frame
+- Click on frames to view them in a full-screen lightbox
+
+To generate the HTML viewer, use the `--html` flag:
+
+```bash
+python main.py --html MXFInputfiles/example.mxf
+```
+
+Then open the `results/[filename]/index.html` file in your web browser.
+
+### Morpheus Log Decoder
+
+The Morpheus Log Decoder processes Morpheus "KernelDiags" logs to analyze SCTE messages.
+
+```bash
+python -m src.decoders.morpheus_decoder KernelDiags.log.2025-02-26
+```
+
+### Phabrix Decoder
+
+The Phabrix Decoder connects to a Phabrix device to analyze live SCTE signals.
+
+```bash
+python -m src.decoders.phabrix_decoder
+```
+
+## Development
+
+### Adding New Decoders
+
+To add a new decoder, create a new module in the `src/decoders/` directory and implement the required functionality. Then, add a corresponding CLI module in the `src/cli/` directory if needed.
+
+### Running Tests
+
+```bash
+pytest
+```
+
+## Documentation
+
+For more information about SCTE standards, refer to the [VRT Confluence page](https://vrt-prod.atlassian.net/wiki/spaces/TVUZS/pages/16091094/Beschrijving+SCTE-standaard+en+implementatie+op+VRT).
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
