@@ -1,10 +1,3 @@
-"""
-Command-line interface for the MXF decoder.
-
-This module provides a command-line interface for decoding MXF files and
-extracting SCTE-104 messages.
-"""
-
 import argparse
 import logging
 import sys

@@ -260,7 +260,7 @@ def read_data(op_id: int, bit_subdata: bitstring.BitString) -> Dict[str, Any]:
 
 def encode_data(
     op_id: int, bit_array: bitstring.BitArray, data: Dict[str, Any], position: int
-) -> int:
+) -> None:
     """
     Encode data into a BitArray based on the operation ID.
 
@@ -269,74 +269,12 @@ def encode_data(
         bit_array: BitArray to encode the data into
         data: Dictionary containing the data to encode
         position: Position in the BitArray to start encoding
-        
-    Returns:
-        int: New position in the BitArray after encoding
     """
-    if op_id == 0x0001:  # splice_request_data
-        bit_array[position:position+8] = bitstring.pack('uint:8', data.get("splice_insert_type", 0))
-        position += 8
-        bit_array[position:position+32] = bitstring.pack('uint:32', data.get("splice_event_id", 0))
-        position += 32
-        bit_array[position:position+16] = bitstring.pack('uint:16', data.get("unique_program_id", 0))
-        position += 16
-        bit_array[position:position+16] = bitstring.pack('uint:16', data.get("pre_roll_time", 0))
-        position += 16
-        bit_array[position:position+16] = bitstring.pack('uint:16', data.get("break_duration", 0))
-        position += 16
-        bit_array[position:position+8] = bitstring.pack('uint:8', data.get("avail_num", 0))
-        position += 8
-        bit_array[position:position+8] = bitstring.pack('uint:8', data.get("avails_expected", 0))
-        position += 8
-        bit_array[position:position+8] = bitstring.pack('uint:8', data.get("auto_return_flag", 0))
-        position += 8
-    elif op_id == 0x0004:  # time_signal_request_data
-        bit_array[position:position+16] = bitstring.pack('uint:16', data.get("pre_roll_time", 0))
-        position += 16
-    elif op_id == 0x000E:  # insert_segmentation_descriptor_request_data
-        bit_array[position:position+32] = bitstring.pack('uint:32', data.get("segmentation_event_id", 0))
-        position += 32
-        bit_array[position:position+8] = bitstring.pack('uint:8', data.get("segmentation_event_cancel_indicator", 0))
-        position += 8
-        bit_array[position:position+16] = bitstring.pack('uint:16', data.get("duration", 0))
-        position += 16
-        bit_array[position:position+8] = bitstring.pack('uint:8', data.get("segmentation_upid_type", 0))
-        position += 8
-        
-        # Get UPID length and data
-        upid_length = data.get("segmentation_upid_length", 0)
-        bit_array[position:position+8] = bitstring.pack('uint:8', upid_length)
-        position += 8
-        
-        # Write UPID if present
-        if upid_length > 0:
-            upid = data.get("segmentation_upid", "")
-            # Convert hex string to bits if needed
-            if isinstance(upid, str) and upid:
-                upid_bits = bitstring.BitArray(hex=upid)
-                bit_array[position:position+(upid_length*8)] = upid_bits
-            elif isinstance(upid, bytes):
-                bit_array[position:position+(upid_length*8)] = bitstring.BitArray(bytes=upid)
-            position += upid_length * 8
-        
-        # Write segmentation type ID
-        seg_type = data.get("segmentation_type_id", {})
-        if isinstance(seg_type, dict):
-            seg_value = seg_type.get("message_value", 0)
-        else:
-            seg_value = seg_type
-        bit_array[position:position+8] = bitstring.pack('uint:8', seg_value)
-        position += 8
-        
-        bit_array[position:position+8] = bitstring.pack('uint:8', data.get("segment_num", 0))
-        position += 8
-        bit_array[position:position+8] = bitstring.pack('uint:8', data.get("segments_expected", 0))
-        position += 8
-        bit_array[position:position+8] = bitstring.pack('uint:8', data.get("sub_segment_num", 0))
-        position += 8
-        bit_array[position:position+8] = bitstring.pack('uint:8', data.get("sub_segments_expected", 0))
-        position += 8
-    else:
-        logger.warning(f"Unsupported operation ID for data encoding: {hex(op_id)}")
-    
-    return position
+    # This is a placeholder for the actual SCTE-104 data encoding
+    # In a real implementation, we would need to handle all operation types
+    logger.warning(
+        "SCTE-104 data encoding not fully implemented - this is a placeholder"
+    )
+
+    # The full implementation would encode the data according to the SCTE-104 specification
+    # based on the operation ID and the provided data
