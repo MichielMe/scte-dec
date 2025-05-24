@@ -90,7 +90,7 @@ class SpliceEvent:
 
     def __init__(
         self,
-        bitarray_data: Optional[bitstring.BitString] = None,
+        bitarray_data: Optional[bitstring.BitStream] = None,
         init_dict: Optional[Dict[str, Any]] = None,
     ):
         """
@@ -145,7 +145,7 @@ class SpliceEvent:
                 message_dict["ops"][index]["op_id"]
             )
             message_dict["ops"][index]["data_length"] = bitarray_data.read("uint:16")
-            bit_subdata = bitstring.BitString(
+            bit_subdata = bitstring.BitStream(
                 bytes=bytes.fromhex(
                     bitarray_data.read(
                         "hex:"

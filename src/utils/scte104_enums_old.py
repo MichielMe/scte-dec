@@ -187,7 +187,7 @@ def get_multi_op_id_type(op_id: int) -> str:
         return f"unknown_multi_op_id_type_{hex(op_id)}"
 
 
-def read_data(op_id: int, bit_subdata: bitstring.BitString) -> Dict[str, Any]:
+def read_data(op_id: int, bit_subdata: bitstring.BitStream) -> Dict[str, Any]:
     """
     Read data from a BitString based on the operation ID.
 

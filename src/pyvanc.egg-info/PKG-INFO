@@ -1,0 +1,58 @@
+Metadata-Version: 2.4
+Name: pyvanc
+Version: 0.1.0
+Summary: A Python library to read VANC data (especially SCTE-104) from MXF files using PyAV.
+Author-email: Your Name <you@example.com>
+Project-URL: Homepage, https://github.com/yourusername/pyvanc
+Project-URL: Bug Tracker, https://github.com/yourusername/pyvanc/issues
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Topic :: Multimedia :: Video
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: av>=9.0.0
+
+# pyvanc
+
+A Python library to read VANC (Vertical Ancillary) data, with a special focus on SCTE-104 messages, from MXF video files. This library uses PyAV for interacting with video files and is inspired by the functionality of [libklvanc](https://github.com/stoth68000/libklvanc).
+
+## Features (Planned)
+
+- Open and process MXF files.
+- Extract VANC data from video streams.
+- Parse SCTE-104 messages from VANC data.
+- Provide a simple API for accessing SCTE-104 message content.
+
+## Installation
+
+```bash
+pip install pyvanc
+# or for development:
+pip install -r requirements.txt
+```
+
+## Basic Usage (Conceptual)
+
+```python
+from pyvanc import read_scte104_from_mxf
+
+mxf_file_path = "path/to/your/video.mxf"
+scte104_messages = read_scte104_from_mxf(mxf_file_path)
+
+for message in scte104_messages:
+    print(f"Found SCTE-104 message: {message}")
+```
+
+## Development
+
+This project uses `setuptools` for packaging. To install dependencies for development:
+
+```bash
+pip install -e .[dev] # Assuming a [project.optional-dependencies] dev group in pyproject.toml
+# or simply
+pip install -r requirements.txt
+```
+
+Contributions are welcome! Please open an issue or submit a pull request.

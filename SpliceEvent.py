@@ -1,17 +1,21 @@
 # forked copy that belongs in Lib\site-packages\scte\Scte104
-from scte.Scte104 import scte104_enums
 import copy
-import bitstring
 import json
 from string import Template
+
+import bitstring
+from scte.Scte104 import scte104_enums
 from timecode import Timecode
+
 byte_size = 8
 
 import logging
+
 log = logging.getLogger(__name__)
 
 import datetime
 from datetime import timezone
+
 
 class SpliceEvent:
     def __init__(self, bitarray_data, init_dict=None):
@@ -20,19 +24,23 @@ class SpliceEvent:
             return
         message_dict = {}
         message_dict["reserved"] = {"raw": bitarray_data.read("uint:16")}
-        message_dict["reserved"]["type"] = scte104_enums.get_op_id_type(message_dict["reserved"]["raw"])
+        message_dict["reserved"]["type"] = scte104_enums.get_op_id_type(
+            message_dict["reserved"]["raw"]
+        )
         message_dict["message_size"] = bitarray_data.read("uint:16")
-        message_dict["protocol_version"] = bitarray_data.read("uint:8")        
+        message_dict["protocol_version"] = bitarray_data.read("uint:8")
         message_dict["as_index"] = bitarray_data.read("uint:8")
         message_dict["message_number"] = bitarray_data.read("uint:8")
         message_dict["dpi_pid_index"] = bitarray_data.read("uint:16")
         message_dict["scte35_protocol_version"] = bitarray_data.read("uint:8")
         message_dict["timestamp"] = {}
         message_dict["timestamp"]["time_type"] = bitarray_data.read("uint:8")
-        
+
         if message_dict["timestamp"]["time_type"] == 1:
             message_dict["timestamp"]["UTC_seconds"] = bitarray_data.read("uint:32")
-            message_dict["timestamp"]["UTC_microseconds"] = bitarray_data.read("uint:16")
+            message_dict["timestamp"]["UTC_microseconds"] = bitarray_data.read(
+                "uint:16"
+            )
         elif message_dict["timestamp"]["time_type"] == 2:
             message_dict["timestamp"]["hours"] = bitarray_data.read("uint:8")
             message_dict["timestamp"]["minutes"] = bitarray_data.read("uint:8")
@@ -46,40 +54,103 @@ class SpliceEvent:
         for index in range(message_dict["num_ops"]):
             message_dict["ops"].append({})
             message_dict["ops"][index]["op_id"] = bitarray_data.read("uint:16")
-            message_dict["ops"][index]["type"] = scte104_enums.get_multi_op_id_type(message_dict["ops"][index]["op_id"])
+            message_dict["ops"][index]["type"] = scte104_enums.get_multi_op_id_type(
+                message_dict["ops"][index]["op_id"]
+            )
             message_dict["ops"][index]["data_length"] = bitarray_data.read("uint:16")
-            bit_subdata = bitstring.BitString(bytes=bytes.fromhex(bitarray_data.read("hex:" + str(message_dict["ops"][index]["data_length"]*byte_size))))
-            message_dict["ops"][index]["data"] = scte104_enums.read_data(message_dict["ops"][index]["op_id"], bit_subdata) 
+            bit_subdata = bitstring.BitStream(
+                bytes=bytes.fromhex(
+                    bitarray_data.read(
+                        "hex:"
+                        + str(message_dict["ops"][index]["data_length"] * byte_size)
+                    )
+                )
+            )
+            message_dict["ops"][index]["data"] = scte104_enums.read_data(
+                message_dict["ops"][index]["op_id"], bit_subdata
+            )
         self.as_dict = message_dict
 
     def print(self):
         print(str(self))
 
     def to_json(self):
-        return(json.dumps(self.to_dict(upid_as_str=True), indent=4, sort_keys=False))
+        return json.dumps(self.to_dict(upid_as_str=True), indent=4, sort_keys=False)
 
     def __str__(self):
-        return(json.dumps(self.to_dict(upid_as_str=True), indent=4, sort_keys=False))
+        return json.dumps(self.to_dict(upid_as_str=True), indent=4, sort_keys=False)
 
     def print_detailed(self):
-        print("reserved", hex(self.as_dict['reserved']['raw']), self.as_dict['reserved']['type'])
-        print("message_size", hex(self.as_dict['message_size']), self.as_dict['message_size'])
-        print("protocol_version", hex(self.as_dict['protocol_version']), self.as_dict['protocol_version'])
-        print("as_index", hex(self.as_dict['as_index']), self.as_dict['as_index'])
-        print("message_number", hex(self.as_dict['message_number']), self.as_dict['message_number'])
-        print("dpi_pid_index", hex(self.as_dict['dpi_pid_index']), self.as_dict['dpi_pid_index'])
-        print("scte35_protocol_version", hex(self.as_dict['scte35_protocol_version']), self.as_dict['scte35_protocol_version'])
-        print("timestamp", hex(self.as_dict['timestamp']["time_type"]), self.as_dict['timestamp']["time_type"])
-        if self.as_dict['timestamp']["time_type"] == 2:
-            print("  hours", hex(self.as_dict['timestamp']["hours"]), self.as_dict['timestamp']["hours"])
-            print("  minutes", hex(self.as_dict['timestamp']["minutes"]), self.as_dict['timestamp']["minutes"])
-            print("  seconds", hex(self.as_dict['timestamp']["seconds"]), self.as_dict['timestamp']["seconds"])
-            print("  frames", hex(self.as_dict['timestamp']["frames"]), self.as_dict['timestamp']["frames"])
-            print("num_ops", hex(self.as_dict['num_ops']), self.as_dict['num_ops'])
-        if self.as_dict['timestamp']["time_type"] == 1:
-            print("  UTC_seconds", hex(self.as_dict['timestamp']["UTC_seconds"]), self.as_dict['timestamp']["UTC_seconds"])
-            print("  UTC_microseconds", hex(self.as_dict['timestamp']["UTC_microseconds"]), self.as_dict['timestamp']["UTC_microseconds"])
-            '''
+        print(
+            "reserved",
+            hex(self.as_dict["reserved"]["raw"]),
+            self.as_dict["reserved"]["type"],
+        )
+        print(
+            "message_size",
+            hex(self.as_dict["message_size"]),
+            self.as_dict["message_size"],
+        )
+        print(
+            "protocol_version",
+            hex(self.as_dict["protocol_version"]),
+            self.as_dict["protocol_version"],
+        )
+        print("as_index", hex(self.as_dict["as_index"]), self.as_dict["as_index"])
+        print(
+            "message_number",
+            hex(self.as_dict["message_number"]),
+            self.as_dict["message_number"],
+        )
+        print(
+            "dpi_pid_index",
+            hex(self.as_dict["dpi_pid_index"]),
+            self.as_dict["dpi_pid_index"],
+        )
+        print(
+            "scte35_protocol_version",
+            hex(self.as_dict["scte35_protocol_version"]),
+            self.as_dict["scte35_protocol_version"],
+        )
+        print(
+            "timestamp",
+            hex(self.as_dict["timestamp"]["time_type"]),
+            self.as_dict["timestamp"]["time_type"],
+        )
+        if self.as_dict["timestamp"]["time_type"] == 2:
+            print(
+                "  hours",
+                hex(self.as_dict["timestamp"]["hours"]),
+                self.as_dict["timestamp"]["hours"],
+            )
+            print(
+                "  minutes",
+                hex(self.as_dict["timestamp"]["minutes"]),
+                self.as_dict["timestamp"]["minutes"],
+            )
+            print(
+                "  seconds",
+                hex(self.as_dict["timestamp"]["seconds"]),
+                self.as_dict["timestamp"]["seconds"],
+            )
+            print(
+                "  frames",
+                hex(self.as_dict["timestamp"]["frames"]),
+                self.as_dict["timestamp"]["frames"],
+            )
+            print("num_ops", hex(self.as_dict["num_ops"]), self.as_dict["num_ops"])
+        if self.as_dict["timestamp"]["time_type"] == 1:
+            print(
+                "  UTC_seconds",
+                hex(self.as_dict["timestamp"]["UTC_seconds"]),
+                self.as_dict["timestamp"]["UTC_seconds"],
+            )
+            print(
+                "  UTC_microseconds",
+                hex(self.as_dict["timestamp"]["UTC_microseconds"]),
+                self.as_dict["timestamp"]["UTC_microseconds"],
+            )
+            """
             TODO add others
             if message_dict["timestamp"]["time_type"] == 1:
             message_dict["timestamp"]["UTC_seconds"] = bitarray_data.read("uint:32")
@@ -94,41 +165,98 @@ class SpliceEvent:
             if message_dict["timestamp"]["time_type"] == 3:
             message_dict["timestamp"]["GP_number"] = bitarray_data.read("uint:8")
             message_dict["timestamp"]["GP_edge"] = bitarray_data.read("uint:8")
-            '''
-        for index in range(len(self.as_dict['ops'])):
+            """
+        for index in range(len(self.as_dict["ops"])):
 
-            #for key in self.as_dict['ops'][index]:
-                #print(self.as_dict['ops'][index][key])
-            print("op_id", hex(self.as_dict['ops'][index]["op_id"]), self.as_dict['ops'][index]["op_id"], self.as_dict['ops'][index]["type"])
-            print("data_length", hex(self.as_dict['ops'][index]["data_length"]), self.as_dict['ops'][index]["data_length"])
-            #print("data", self.as_dict['ops'][index]["data"])
+            # for key in self.as_dict['ops'][index]:
+            # print(self.as_dict['ops'][index][key])
+            print(
+                "op_id",
+                hex(self.as_dict["ops"][index]["op_id"]),
+                self.as_dict["ops"][index]["op_id"],
+                self.as_dict["ops"][index]["type"],
+            )
+            print(
+                "data_length",
+                hex(self.as_dict["ops"][index]["data_length"]),
+                self.as_dict["ops"][index]["data_length"],
+            )
+            # print("data", self.as_dict['ops'][index]["data"])
             print("data")
-            for key in self.as_dict['ops'][index]["data"]:
-                print("  ", key, self.as_dict['ops'][index]["data"][key])
+            for key in self.as_dict["ops"][index]["data"]:
+                print("  ", key, self.as_dict["ops"][index]["data"][key])
 
-        '''
+        """
         for key in self.as_dict['ops']:
             print("op_id", hex(self.as_dict['ops'][key]["op_id"]), self.as_dict['ops'][key]["op_id"], self.as_dict['ops'][key]["type"])
             print("data_length", hex(self.as_dict['ops'][key]["data_length"]), self.as_dict['ops'][key]["data_length"])
             print("data", self.as_dict['ops'][key]["data"])
-        '''
+        """
 
     def log_detailed(self):
-        log.info("reserved %s %s", hex(self.as_dict['reserved']['raw']), self.as_dict['reserved']['type'])
-        log.info("message_size %s %s", hex(self.as_dict['message_size']), self.as_dict['message_size'])
-        log.info("protocol_version %s %s", hex(self.as_dict['protocol_version']), self.as_dict['protocol_version'])
-        log.info("as_index %s %s", hex(self.as_dict['as_index']), self.as_dict['as_index'])
-        log.info("message_number %s %s", hex(self.as_dict['message_number']), self.as_dict['message_number'])
-        log.info("dpi_pid_index %s %s", hex(self.as_dict['dpi_pid_index']), self.as_dict['dpi_pid_index'])
-        log.info("scte35_protocol_version %s %s", hex(self.as_dict['scte35_protocol_version']), self.as_dict['scte35_protocol_version'])
-        log.info("timestamp %s %s", hex(self.as_dict['timestamp']["time_type"]), self.as_dict['timestamp']["time_type"])
-        if self.as_dict['timestamp']["time_type"] == 2:
-            log.info("  hours %s %s", hex(self.as_dict['timestamp']["hours"]), self.as_dict['timestamp']["hours"])
-            log.info("  minutes %s %s", hex(self.as_dict['timestamp']["minutes"]), self.as_dict['timestamp']["minutes"])
-            log.info("  seconds %s %s", hex(self.as_dict['timestamp']["seconds"]), self.as_dict['timestamp']["seconds"])
-            log.info("  frames %s %s", hex(self.as_dict['timestamp']["frames"]), self.as_dict['timestamp']["frames"])
-            log.info("num_ops %s %s", hex(self.as_dict['num_ops']), self.as_dict['num_ops'])
-            '''
+        log.info(
+            "reserved %s %s",
+            hex(self.as_dict["reserved"]["raw"]),
+            self.as_dict["reserved"]["type"],
+        )
+        log.info(
+            "message_size %s %s",
+            hex(self.as_dict["message_size"]),
+            self.as_dict["message_size"],
+        )
+        log.info(
+            "protocol_version %s %s",
+            hex(self.as_dict["protocol_version"]),
+            self.as_dict["protocol_version"],
+        )
+        log.info(
+            "as_index %s %s", hex(self.as_dict["as_index"]), self.as_dict["as_index"]
+        )
+        log.info(
+            "message_number %s %s",
+            hex(self.as_dict["message_number"]),
+            self.as_dict["message_number"],
+        )
+        log.info(
+            "dpi_pid_index %s %s",
+            hex(self.as_dict["dpi_pid_index"]),
+            self.as_dict["dpi_pid_index"],
+        )
+        log.info(
+            "scte35_protocol_version %s %s",
+            hex(self.as_dict["scte35_protocol_version"]),
+            self.as_dict["scte35_protocol_version"],
+        )
+        log.info(
+            "timestamp %s %s",
+            hex(self.as_dict["timestamp"]["time_type"]),
+            self.as_dict["timestamp"]["time_type"],
+        )
+        if self.as_dict["timestamp"]["time_type"] == 2:
+            log.info(
+                "  hours %s %s",
+                hex(self.as_dict["timestamp"]["hours"]),
+                self.as_dict["timestamp"]["hours"],
+            )
+            log.info(
+                "  minutes %s %s",
+                hex(self.as_dict["timestamp"]["minutes"]),
+                self.as_dict["timestamp"]["minutes"],
+            )
+            log.info(
+                "  seconds %s %s",
+                hex(self.as_dict["timestamp"]["seconds"]),
+                self.as_dict["timestamp"]["seconds"],
+            )
+            log.info(
+                "  frames %s %s",
+                hex(self.as_dict["timestamp"]["frames"]),
+                self.as_dict["timestamp"]["frames"],
+            )
+            log.info(
+                "num_ops %s %s", hex(self.as_dict["num_ops"]), self.as_dict["num_ops"]
+            )
+            """
             TODO add others
             if message_dict["timestamp"]["time_type"] == 1:
             message_dict["timestamp"]["UTC_seconds"] = bitarray_data.read("uint:32")
@@ -143,67 +271,106 @@ class SpliceEvent:
             if message_dict["timestamp"]["time_type"] == 3:
             message_dict["timestamp"]["GP_number"] = bitarray_data.read("uint:8")
             message_dict["timestamp"]["GP_edge"] = bitarray_data.read("uint:8")
-            '''
-        for index in range(len(self.as_dict['ops'])):
+            """
+        for index in range(len(self.as_dict["ops"])):
 
-            #for key in self.as_dict['ops'][index]:
-                #log.info(self.as_dict['ops'][index][key])
-            log.info("op_id %s %s %s", hex(self.as_dict['ops'][index]["op_id"]), self.as_dict['ops'][index]["op_id"], self.as_dict['ops'][index]["type"])
-            log.info("data_length %s %s", hex(self.as_dict['ops'][index]["data_length"]), self.as_dict['ops'][index]["data_length"])
-            #log.info("data", self.as_dict['ops'][index]["data"])
+            # for key in self.as_dict['ops'][index]:
+            # log.info(self.as_dict['ops'][index][key])
+            log.info(
+                "op_id %s %s %s",
+                hex(self.as_dict["ops"][index]["op_id"]),
+                self.as_dict["ops"][index]["op_id"],
+                self.as_dict["ops"][index]["type"],
+            )
+            log.info(
+                "data_length %s %s",
+                hex(self.as_dict["ops"][index]["data_length"]),
+                self.as_dict["ops"][index]["data_length"],
+            )
+            # log.info("data", self.as_dict['ops'][index]["data"])
             log.info("data")
-            for key in self.as_dict['ops'][index]["data"]:
-                log.info("   %s %s", key, self.as_dict['ops'][index]["data"][key])
+            for key in self.as_dict["ops"][index]["data"]:
+                log.info("   %s %s", key, self.as_dict["ops"][index]["data"][key])
 
         # add newline
-        log.info("")       
-                
+        log.info("")
+
     def to_binary(self):
         self.position = 0
-        bit_array = bitstring.BitArray(length=self.as_dict["message_size"]*byte_size)
+        bit_array = bitstring.BitArray(length=self.as_dict["message_size"] * byte_size)
         self.manipulate_bits(bit_array, self.as_dict["reserved"]["raw"], bytes=2)
         self.manipulate_bits(bit_array, self.as_dict["message_size"], bytes=2)
         self.manipulate_bits(bit_array, self.as_dict["protocol_version"], bytes=1)
         self.manipulate_bits(bit_array, self.as_dict["as_index"], bytes=1)
         self.manipulate_bits(bit_array, self.as_dict["message_number"], bytes=1)
         self.manipulate_bits(bit_array, self.as_dict["dpi_pid_index"], bytes=2)
-        self.manipulate_bits(bit_array, self.as_dict["scte35_protocol_version"], bytes=1)
-        self.manipulate_bits(bit_array, self.as_dict["timestamp"]["time_type"], bytes=1) ##timestamp
+        self.manipulate_bits(
+            bit_array, self.as_dict["scte35_protocol_version"], bytes=1
+        )
+        self.manipulate_bits(
+            bit_array, self.as_dict["timestamp"]["time_type"], bytes=1
+        )  ##timestamp
 
         if self.as_dict["timestamp"]["time_type"] == 1:
-            self.manipulate_bits(bit_array, self.as_dict["timestamp"]["UTC_seconds"], bytes=4)
-            self.manipulate_bits(bit_array, self.as_dict["timestamp"]["UTC_microseconds"], bytes=2)
+            self.manipulate_bits(
+                bit_array, self.as_dict["timestamp"]["UTC_seconds"], bytes=4
+            )
+            self.manipulate_bits(
+                bit_array, self.as_dict["timestamp"]["UTC_microseconds"], bytes=2
+            )
         elif self.as_dict["timestamp"]["time_type"] == 2:
             self.manipulate_bits(bit_array, self.as_dict["timestamp"]["hours"], bytes=1)
-            self.manipulate_bits(bit_array, self.as_dict["timestamp"]["minutes"], bytes=1)
-            self.manipulate_bits(bit_array, self.as_dict["timestamp"]["seconds"], bytes=1)
-            self.manipulate_bits(bit_array, self.as_dict["timestamp"]["frames"], bytes=1)
+            self.manipulate_bits(
+                bit_array, self.as_dict["timestamp"]["minutes"], bytes=1
+            )
+            self.manipulate_bits(
+                bit_array, self.as_dict["timestamp"]["seconds"], bytes=1
+            )
+            self.manipulate_bits(
+                bit_array, self.as_dict["timestamp"]["frames"], bytes=1
+            )
         elif self.as_dict["timestamp"]["time_type"] == 3:
-            self.manipulate_bits(bit_array, self.as_dict["timestamp"]["GP_number"], bytes=1)
-            self.manipulate_bits(bit_array, self.as_dict["timestamp"]["GP_edge"], bytes=1)
+            self.manipulate_bits(
+                bit_array, self.as_dict["timestamp"]["GP_number"], bytes=1
+            )
+            self.manipulate_bits(
+                bit_array, self.as_dict["timestamp"]["GP_edge"], bytes=1
+            )
 
         self.manipulate_bits(bit_array, self.as_dict["num_ops"], bytes=1)
         for index in range(self.as_dict["num_ops"]):
             ## Read in metadatato  bit string
-            self.manipulate_bits(bit_array, self.as_dict["ops"][index]["op_id"], bytes=2)
-            self.manipulate_bits(bit_array, self.as_dict["ops"][index]["data_length"], bytes=2)
-            
+            self.manipulate_bits(
+                bit_array, self.as_dict["ops"][index]["op_id"], bytes=2
+            )
+            self.manipulate_bits(
+                bit_array, self.as_dict["ops"][index]["data_length"], bytes=2
+            )
+
             ## read in actual position to metadata
-            scte104_enums.encode_data(self.as_dict["ops"][index]["op_id"], bit_array, self.as_dict["ops"][index]["data"], self.position)
-        
+            scte104_enums.encode_data(
+                self.as_dict["ops"][index]["op_id"],
+                bit_array,
+                self.as_dict["ops"][index]["data"],
+                self.position,
+            )
+
             ##adjust position by data offset
-            self.position = self.position + (self.as_dict["ops"][index]["data_length"]) * byte_size
+            self.position = (
+                self.position + (self.as_dict["ops"][index]["data_length"]) * byte_size
+            )
         return bit_array
 
     def to_dict(self, upid_as_str=False):
         the_dict = copy.deepcopy(self.as_dict)
         if upid_as_str:
-          if "ops" in the_dict:
-            for idx,op in enumerate(the_dict['ops']):
-              if "data" in op:
-                if "segmentation_upid" in op['data']:
-                  the_dict["ops"][idx]["data"]['segmentation_upid'] = \
-                      str(the_dict["ops"][idx]["data"]['segmentation_upid'])
+            if "ops" in the_dict:
+                for idx, op in enumerate(the_dict["ops"]):
+                    if "data" in op:
+                        if "segmentation_upid" in op["data"]:
+                            the_dict["ops"][idx]["data"]["segmentation_upid"] = str(
+                                the_dict["ops"][idx]["data"]["segmentation_upid"]
+                            )
         return the_dict
 
     def deep_copy(self):
@@ -212,46 +379,52 @@ class SpliceEvent:
     def manipulate_bits(self, bit_array, value, bytes=1):
         hex_val = self.hex_string(value, bytes)
         bit_array.overwrite(hex_val, pos=self.position)
-        self.position = self.position + bytes*byte_size
+        self.position = self.position + bytes * byte_size
         return None
 
-
     def hex_string(self, value, bytes):
-        s = hex(value) 
-        return '0x' + s[2:].zfill(bytes*2)
+        s = hex(value)
+        return "0x" + s[2:].zfill(bytes * 2)
 
     def get_pre_roll_time(self):
         return self.as_dict["ops"][0]["data"]["pre_roll_time"]
-    
+
     def get_splice_event_timestamp(self):
-        if self.as_dict['timestamp']["time_type"] == 2:
-            splice_event_template = Template('${hours}:${minutes}:${seconds}:${frames}')
-            hours = int(self.as_dict['timestamp']["hours"])
-            minutes = int(self.as_dict['timestamp']["minutes"])
-            seconds = int(self.as_dict['timestamp']["seconds"])
-            frames = int(self.as_dict['timestamp']["frames"])
-            splice_event_timestamp = Timecode('25', splice_event_template.substitute(hours=hours, minutes=minutes, seconds=seconds, frames=frames))
+        if self.as_dict["timestamp"]["time_type"] == 2:
+            splice_event_template = Template("${hours}:${minutes}:${seconds}:${frames}")
+            hours = int(self.as_dict["timestamp"]["hours"])
+            minutes = int(self.as_dict["timestamp"]["minutes"])
+            seconds = int(self.as_dict["timestamp"]["seconds"])
+            frames = int(self.as_dict["timestamp"]["frames"])
+            splice_event_timestamp = Timecode(
+                "25",
+                splice_event_template.substitute(
+                    hours=hours, minutes=minutes, seconds=seconds, frames=frames
+                ),
+            )
 
             # convert preroll in milliseconds to frames
-            preroll_to_frames = int(self.as_dict["ops"][0]["data"]["pre_roll_time"])//40
-            preroll = Timecode('25', None, None, preroll_to_frames, False)
+            preroll_to_frames = (
+                int(self.as_dict["ops"][0]["data"]["pre_roll_time"]) // 40
+            )
+            preroll = Timecode("25", None, None, preroll_to_frames, False)
 
-            #add announced timestamp and preroll to return timestamp of transition point         
-            return (splice_event_timestamp+preroll)
+            # add announced timestamp and preroll to return timestamp of transition point
+            return splice_event_timestamp + preroll
         else:
-            pass #notimplemented
-    
+            pass  # notimplemented
+
     def get_segmentation_upid(self):
         return self.as_dict["ops"][1]["data"]["segmentation_upid"]
-    
+
     def get_segmentation_type_id(self):
         return self.as_dict["ops"][1]["data"]["segmentation_type_id"]
-    
+
     def get_segmentation_event_id(self):
         return self.as_dict["ops"][1]["data"]["segmentation_event_id"]
-    
+
     def get_duration(self):
-        return self.as_dict["ops"][1]["data"]["duration"] #seconds
+        return self.as_dict["ops"][1]["data"]["duration"]  # seconds
 
     def set_pre_roll_time(self, time):
         self.as_dict["ops"][0]["data"]["pre_roll_time"] = time

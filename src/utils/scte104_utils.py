@@ -32,7 +32,7 @@ def validate_hex_string(hex_string: str) -> bool:
         bool: True if the string is a valid hexadecimal string, False otherwise
     """
     # Check if the string contains only hexadecimal characters
-    hex_pattern = re.compile(r'^[0-9a-fA-F]+$')
+    hex_pattern = re.compile(r"^[0-9a-fA-F]+$")
     return bool(hex_pattern.match(hex_string))
 
 
@@ -52,12 +52,12 @@ def decode_SCTE104(hex_string: str) -> SpliceEvent:
     """
     if not hex_string:
         raise ValueError("Empty hex string provided")
-    
+
     if not validate_hex_string(hex_string):
         raise ValueError("Invalid hexadecimal string provided")
-    
+
     try:
-        bitarray_data = bitstring.BitString(bytes=bytes.fromhex(hex_string))
+        bitarray_data = bitstring.BitStream(bytes=bytes.fromhex(hex_string))
         return SpliceEvent(bitarray_data)
     except ValueError as e:
         logger.error(f"Value error decoding SCTE-104 data: {e}")
@@ -139,7 +139,7 @@ def extract_scte104_metadata(event: SpliceEvent) -> Dict[str, Any]:
     """
     if event is None:
         raise ValueError("Cannot extract metadata from None SpliceEvent")
-        
+
     try:
         metadata = {
             "splice_event_timestamp": event.get_splice_event_timestamp(),
@@ -175,14 +175,16 @@ def encode_SCTE104(packet: Union[SCTE104Packet, SpliceEvent]) -> str:
     """
     if packet is None:
         raise ValueError("Cannot encode None packet")
-        
+
     try:
         if isinstance(packet, SCTE104Packet):
             # Convert SCTE104Packet to SpliceEvent if needed
-            # This is a simplification - in a real implementation, 
+            # This is a simplification - in a real implementation,
             # you would need to create a proper SpliceEvent from the SCTE104Packet
             # For now, we'll just raise an error
-            raise NotImplementedError("Direct encoding of SCTE104Packet not supported yet")
+            raise NotImplementedError(
+                "Direct encoding of SCTE104Packet not supported yet"
+            )
         elif isinstance(packet, SpliceEvent):
             # SpliceEvent objects should have a method to get their bitarray representation
             bitarray = packet.to_bitarray()

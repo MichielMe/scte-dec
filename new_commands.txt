@@ -1,0 +1,1 @@
+❯ uv run examples/extract_scte104_summary.py MXFInputfiles/TESTSCHED1405.mxf
